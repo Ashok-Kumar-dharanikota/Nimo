@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { formatSQLiteDate } from '../utils/dateUtils';
 
 interface JournalWithCount {
@@ -19,11 +21,19 @@ interface RecentEntriesProps {
 }
 
 export const RecentEntries = ({ entries }: RecentEntriesProps) => {
+  const router = useRouter();
+
   return (
     <Animated.View entering={FadeInDown.duration(400).delay(200)} className="mb-12">
       <View className="flex-row justify-between items-end mb-6 px-6">
         <Text className="font-jakarta text-2xl font-bold text-primary tracking-tight">Recent Entries</Text>
-        <TouchableOpacity className="flex-row items-center gap-1">
+        <TouchableOpacity
+          className="flex-row items-center gap-1"
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push('/(app)/journal');
+          }}
+        >
           <Text className="font-jakarta text-sm font-semibold text-sage">View All</Text>
           <Feather name="arrow-right" size={14} color="#A4B47C" />
         </TouchableOpacity>
@@ -46,7 +56,15 @@ export const RecentEntries = ({ entries }: RecentEntriesProps) => {
             const formattedDate = journalDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
             return (
-              <TouchableOpacity key={item.journal.id} className="w-[300px] h-[360px] rounded-[32px] overflow-hidden mr-4 shadow-sm bg-primary relative">
+              <TouchableOpacity
+                key={item.journal.id}
+                activeOpacity={0.9}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push('/(app)/journal');
+                }}
+                className="w-[300px] h-[360px] rounded-[32px] overflow-hidden mr-4 shadow-sm bg-primary relative"
+              >
                 <Image 
                   source={{ uri: `https://images.unsplash.com/photo-1506744626753-1fa44df31c7f?q=80&w=600&auto=format&fit=crop&sig=${item.journal.id}` }}
                   className="w-full h-full absolute"

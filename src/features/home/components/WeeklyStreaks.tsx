@@ -16,7 +16,7 @@ interface WeeklyStreaksProps {
   moments: Moment[];
 }
 
-const DAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export function WeeklyStreaks({ moments }: WeeklyStreaksProps) {
   const weekDates = getCurrentWeekDates();
@@ -25,7 +25,7 @@ export function WeeklyStreaks({ moments }: WeeklyStreaksProps) {
   return (
     <Animated.View
       entering={FadeInDown.duration(400).delay(100)}
-      className="flex-row justify-between px-5 mt-2 mb-6"
+      className="flex-row justify-between px-5 mt-2 mb-6 bg-surfaceContainerLow/50 py-4.5 rounded-[24px] border border-outlineVariant/10"
     >
       {weekDates.map((date, index) => {
         const isToday = isSameDay(date, today);
@@ -35,51 +35,52 @@ export function WeeklyStreaks({ moments }: WeeklyStreaksProps) {
         );
 
         const dayStyle = completed
-          ? "text-sage"
+          ? "text-secondary font-bold"
           : isToday
             ? "text-primary font-bold"
             : "text-onSurfaceVariant/60";
 
         const dateStyle = completed
-          ? "text-sage"
+          ? "text-secondary font-bold"
           : isToday
             ? "text-primary font-bold"
             : "text-onSurfaceVariant/60";
 
         const circleStyle = completed
-          ? "border-sage bg-sage"
+          ? "border-secondary bg-secondary/15"
           : isToday
-            ? "border-[1.5px] border-primary bg-surfaceContainerLowest"
-            : "border border-dashed border-outlineVariant bg-surfaceContainerLowest opacity-50";
+            ? "border-[2px] border-primary bg-surfaceContainerLowest"
+            : "border border-dashed border-outlineVariant bg-surfaceContainerLowest opacity-60";
 
         return (
           <View
             key={date.toISOString()}
-            className="items-center gap-2"
+            className="items-center gap-2 flex-1"
           >
             <Text
-              className={`text-[10px] uppercase font-medium ${dayStyle}`}
+              className={`text-[10px] font-semibold tracking-wide ${dayStyle}`}
             >
               {DAYS[index]}
             </Text>
 
             <View
-              className={`w-10 h-10 rounded-full items-center justify-center ${circleStyle}`}
+              className={`w-9 h-9 rounded-full items-center justify-center border ${circleStyle}`}
             >
-              {completed && (
-                <Feather
-                  name="check"
-                  size={16}
-                  color="white"
-                />
+              {completed ? (
+                <Text className="text-xs">🌿</Text>
+              ) : isToday ? (
+                <View className="w-2.5 h-2.5 rounded-full bg-primary" />
+              ) : (
+                <Text className="text-[10px] text-onSurfaceVariant/40 font-bold">{date.getDate()}</Text>
               )}
             </View>
 
             <Text
-              className={`text-[10px] font-medium ${dateStyle}`}
+              className={`text-[9px] font-semibold ${dateStyle}`}
             >
-              {date.getDate()}
+              {completed ? `${date.getDate()} ✓` : date.getDate()}
             </Text>
+
           </View>
         );
       })}

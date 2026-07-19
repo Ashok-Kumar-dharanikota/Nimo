@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { formatTime } from '../utils/dateUtils';
 
 interface MomentData {
@@ -80,7 +81,10 @@ export const TodaysFlow = ({ moments }: TodaysFlowProps) => {
           {/* Add Moment Button */}
           <TouchableOpacity 
             className="flex-row items-center mt-2 group"
-            onPress={() => router.push('/compose')}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/compose');
+            }}
             activeOpacity={0.7}
           >
             <View className="w-10 h-10 rounded-full border-2 border-dashed border-primary/30 items-center justify-center z-10 bg-surfaceContainerLowest mr-5">

@@ -1,5 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getWeeklyStreaks, getRecentEntries, getTodaysFlow, addQuickMoment } from '../services/homeService';
+import {
+  getWeeklyStreaks,
+  getRecentEntries,
+  getTodaysFlow,
+  addQuickMoment,
+  getMomentsForCurrentYear,
+} from '../services/homeService';
 
 export const useHomeData = () => {
   const queryClient = useQueryClient();
@@ -19,12 +25,18 @@ export const useHomeData = () => {
     queryFn: getTodaysFlow,
   });
 
+  const memoryTreeQuery = useQuery({
+    queryKey: ['memoryTree'],
+    queryFn: () => getMomentsForCurrentYear(),
+  });
+
   const addMomentMutation = useMutation({
-    mutationFn: (content: string) => addQuickMoment(content),
+    mutationFn: ({ content, emotion }: { content: string, emotion?: string }) => addQuickMoment(content, emotion),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['weeklyStreaks'] });
       queryClient.invalidateQueries({ queryKey: ['recentEntries'] });
       queryClient.invalidateQueries({ queryKey: ['todaysFlow'] });
+      queryClient.invalidateQueries({ queryKey: ['memoryTree'] });
     }
   });
 
@@ -32,13 +44,15 @@ export const useHomeData = () => {
     weeklyStreaks: weeklyStreaksQuery.data || [],
     recentEntries: recentEntriesQuery.data || [],
     todaysFlow: todaysFlowQuery.data || [],
-    isLoading: weeklyStreaksQuery.isLoading || recentEntriesQuery.isLoading || todaysFlowQuery.isLoading,
+    memoryTree: memoryTreeQuery.data || [],
+    isLoading: memoryTreeQuery.isLoading, // only gate on tree query
     addQuickMoment: addMomentMutation.mutate,
     isAddingMoment: addMomentMutation.isPending,
     refetch: () => {
       weeklyStreaksQuery.refetch();
       recentEntriesQuery.refetch();
       todaysFlowQuery.refetch();
+      memoryTreeQuery.refetch();
     }
   };
 };
