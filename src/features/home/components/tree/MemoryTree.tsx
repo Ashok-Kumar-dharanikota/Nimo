@@ -6,10 +6,20 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
-import { MaterialIcons } from '@expo/vector-icons';
+import Animated, {
+  FadeIn,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
+import { MaterialIcons, Feather } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import type { DayData, MomentItem } from '../../services/homeService';
 import { MomentSheet } from './MomentSheet';
 
@@ -17,6 +27,7 @@ interface MemoryTreeProps {
   days: DayData[];
   isLoading: boolean;
   onBack?: () => void;
+  onSelectEmptyDay?: (day: DayData) => void;
 }
 
 const pseudoRandom = (seed: number) => {
@@ -26,13 +37,16 @@ const pseudoRandom = (seed: number) => {
 
 const getSeasonTheme = (monthIndex: number) => {
   // Spring: 2, 3, 4 (Mar-May)
-  if (monthIndex >= 2 && monthIndex <= 4) return { dot: '#AED581' }; 
-  // Summer: 5, 6, 7 (Jun-Aug)
-  if (monthIndex >= 5 && monthIndex <= 7) return { dot: '#FFF59D' }; 
+  if (monthIndex >= 2 && monthIndex <= 4)
+    return { dot: '#7CB342', bg: 'rgba(124, 179, 66, 0.12)', label: '#558B2F' };
+  // Summer: 5, 6, 7 (Jun-Aug) - High contrast gold/amber
+  if (monthIndex >= 5 && monthIndex <= 7)
+    return { dot: '#FBC02D', bg: 'rgba(251, 192, 45, 0.15)', label: '#F57F17' };
   // Autumn: 8, 9, 10 (Sep-Nov)
-  if (monthIndex >= 8 && monthIndex <= 10) return { dot: '#FFB74D' }; 
+  if (monthIndex >= 8 && monthIndex <= 10)
+    return { dot: '#FB8C00', bg: 'rgba(251, 140, 0, 0.12)', label: '#E65100' };
   // Winter: 11, 0, 1 (Dec-Feb)
-  return { dot: '#81D4FA' }; 
+  return { dot: '#0288D1', bg: 'rgba(2, 136, 209, 0.12)', label: '#01579B' };
 };
 
 const AnimatedPlant = ({ emoji, seed }: { emoji: string; seed: number }) => {
@@ -55,7 +69,7 @@ const AnimatedPlant = ({ emoji, seed }: { emoji: string; seed: number }) => {
   }, [seed]);
 
   const style = useAnimatedStyle(() => ({
-    transform: [{ rotateZ: `${rotation.value}deg` }]
+    transform: [{ rotateZ: `${rotation.value}deg` }],
   }));
 
   return (
@@ -75,14 +89,16 @@ const Butterfly = () => {
         withTiming(-15, { duration: 800 }),
         withTiming(10, { duration: 1200 })
       ),
-      -1, true
+      -1,
+      true
     );
     translateX.value = withRepeat(
       withSequence(
         withTiming(20, { duration: 2000 }),
         withTiming(-20, { duration: 2500 })
       ),
-      -1, true
+      -1,
+      true
     );
   }, []);
 
@@ -92,8 +108,8 @@ const Butterfly = () => {
     right: 40,
     transform: [
       { translateY: translateY.value },
-      { translateX: translateX.value }
-    ]
+      { translateX: translateX.value },
+    ],
   }));
 
   return (
@@ -101,16 +117,56 @@ const Butterfly = () => {
   );
 };
 
-export function MemoryTree({ days, isLoading, onBack }: MemoryTreeProps) {
+const TodayPulseRing = ({ children }: { children: React.ReactNode }) => {
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(0.4);
+
+  useEffect(() => {
+    scale.value = withRepeat(
+      withSequence(
+        withTiming(1.18, { duration: 1200 }),
+        withTiming(1.0, { duration: 1200 })
+      ),
+      -1,
+      true
+    );
+    opacity.value = withRepeat(
+      withSequence(
+        withTiming(0.8, { duration: 1200 }),
+        withTiming(0.3, { duration: 1200 })
+      ),
+      -1,
+      true
+    );
+  }, []);
+
+  const ringStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
+  return (
+    <View style={styles.todayWrapper}>
+      <Animated.View style={[styles.todayGlowRing, ringStyle]} />
+      {children}
+    </View>
+  );
+};
+
+export function MemoryTree({ days, isLoading, onBack, onSelectEmptyDay }: MemoryTreeProps) {
   const [selectedMoment, setSelectedMoment] = useState<MomentItem | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const monthOffsets = useRef<{ [key: number]: number }>({});
+  const currentMonthY = useRef<number | null>(null);
   const [hasScrolled, setHasScrolled] = useState(false);
-  const currentMonth = new Date().getMonth();
+  const [showJumpToToday, setShowJumpToToday] = useState(false);
+
+  const now = new Date();
+  const currentMonth = now.getMonth();
 
   // Group days by month (0-11)
   const monthsData = Array.from({ length: 12 }, () => [] as DayData[]);
-  days.forEach(day => {
+  days.forEach((day) => {
     const dateObj = new Date(day.date);
     const m = dateObj.getMonth();
     monthsData[m].push(day);
@@ -118,23 +174,53 @@ export function MemoryTree({ days, isLoading, onBack }: MemoryTreeProps) {
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    'July', 'August', 'September', 'October', 'November', 'December',
   ];
 
   const handleDayPress = useCallback((day: DayData) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (day.moments.length > 0) {
       setSelectedMoment(day.moments[0]);
+    } else if (onSelectEmptyDay) {
+      onSelectEmptyDay(day);
     }
-  }, []);
+  }, [onSelectEmptyDay]);
 
   const handleCloseSheet = useCallback(() => {
     setSelectedMoment(null);
   }, []);
 
-  const getPlantEmoji = (moment: MomentItem | undefined) => {
-    if (!moment) return '';
-    if (moment.emotion) return moment.emotion;
-    return '🌳'; // default
+  const handleScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const y = event.nativeEvent.contentOffset.y;
+    if (currentMonthY.current !== null) {
+      if (Math.abs(y - currentMonthY.current) > 280) {
+        setShowJumpToToday(true);
+      } else {
+        setShowJumpToToday(false);
+      }
+    }
+  }, []);
+
+  const handleJumpToToday = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (currentMonthY.current !== null) {
+      scrollViewRef.current?.scrollTo({ y: currentMonthY.current, animated: true });
+    }
+  }, []);
+
+  const getPlantEmoji = (day: DayData) => {
+    const count = day.moments.length;
+    if (count === 0) return '';
+    const firstMoment = day.moments[0];
+    
+    // Explicit emotion emoji if set
+    if (firstMoment.emotion) return firstMoment.emotion;
+
+    // Dynamic plant growth progression based on moment count
+    if (count === 1) return '🌱';
+    if (count === 2) return '🪴';
+    if (count >= 3) return '🌸';
+    return '🌳';
   };
 
   return (
@@ -144,6 +230,8 @@ export function MemoryTree({ days, isLoading, onBack }: MemoryTreeProps) {
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
       >
         {isLoading && days.length === 0 ? (
           <View style={styles.loadingContainer}>
@@ -152,75 +240,139 @@ export function MemoryTree({ days, isLoading, onBack }: MemoryTreeProps) {
           </View>
         ) : (
           <Animated.View entering={FadeIn.duration(400)} style={styles.gardenContainer}>
+            {/* Top Bar Header */}
             <View style={styles.headerRow}>
               {onBack && (
-                <TouchableOpacity onPress={onBack} style={styles.backBtn} activeOpacity={0.7}>
+                <TouchableOpacity
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    onBack();
+                  }}
+                  style={styles.backBtn}
+                  activeOpacity={0.7}
+                  accessibilityLabel="Go back"
+                  accessibilityRole="button"
+                >
                   <MaterialIcons name="arrow-back" size={24} color="#333" />
                 </TouchableOpacity>
               )}
               <View style={styles.yearPillContainer}>
                 <View style={[styles.yearPill, { backgroundColor: getSeasonTheme(currentMonth).dot }]}>
-                  <Text style={styles.yearText}>{new Date().getFullYear()}</Text>
+                  <Text style={styles.yearText}>{now.getFullYear()}</Text>
                 </View>
               </View>
             </View>
 
+            {/* Months Stream */}
             <View style={styles.gardenContainerInner}>
               {monthsData.map((monthDays, idx) => {
                 if (monthDays.length === 0) return null;
                 const isCurrentMonth = idx === currentMonth;
                 const season = getSeasonTheme(idx);
-                
+
+                // Determine weekday offset for 1st day of month (0 = Sun, 1 = Mon, ..., 6 = Sat)
+                const firstDayDate = monthDays[0]?.date
+                  ? new Date(monthDays[0].date)
+                  : new Date(now.getFullYear(), idx, 1);
+                const firstDayOfWeek = firstDayDate.getDay();
+
                 return (
-                  <View 
-                    key={`month-${idx}`} 
+                  <View
+                    key={`month-${idx}`}
                     style={styles.monthBlock}
                     onLayout={(e) => {
                       const y = e.nativeEvent.layout.y;
                       monthOffsets.current[idx] = y;
-                      if (isCurrentMonth && !hasScrolled) {
-                        setHasScrolled(true);
-                        setTimeout(() => {
-                          scrollViewRef.current?.scrollTo({ y, animated: true });
-                        }, 600);
+                      if (isCurrentMonth) {
+                        currentMonthY.current = y;
+                        if (!hasScrolled) {
+                          setHasScrolled(true);
+                          setTimeout(() => {
+                            scrollViewRef.current?.scrollTo({ y, animated: true });
+                          }, 400);
+                        }
                       }
                     }}
                   >
+                    {/* Month Header Label */}
                     <View style={styles.monthHeaderRow}>
-                      <Text style={styles.monthLabel}>{monthNames[idx]}</Text>
+                      <Text style={[styles.monthLabel, { color: season.label }]}>
+                        {monthNames[idx]}
+                      </Text>
                       {isCurrentMonth && <Butterfly />}
                     </View>
-                    
+
+                    {/* Weekday Row Header (S M T W T F S) */}
+                    <View style={styles.weekdayHeaderRow}>
+                      {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+                        <View key={`wd-${idx}-${i}`} style={styles.weekdayCell}>
+                          <Text style={styles.weekdayLabel}>{day}</Text>
+                        </View>
+                      ))}
+                    </View>
+
+                    {/* Calendar Grid with Offset Padding */}
                     <View style={styles.grid}>
+                      {/* Leading Empty Spacer Cells for Day-of-Week Alignment */}
+                      {Array.from({ length: firstDayOfWeek }).map((_, padIdx) => (
+                        <View key={`pad-${idx}-${padIdx}`} style={styles.gridCell} />
+                      ))}
+
+                      {/* Actual Days */}
                       {monthDays.map((dayData, i) => {
                         const hasMoments = dayData.moments.length > 0;
-                        const plant = getPlantEmoji(dayData.moments[0]);
-                        const hasPrevDayMoment = i > 0 && monthDays[i - 1].moments.length > 0;
-                        
+                        const plant = getPlantEmoji(dayData);
+                        const isToday = dayData.isToday;
+
                         // Seeded random jitter for organic terrain
                         const seed = idx * 100 + i;
-                        const jitterX = (pseudoRandom(seed) - 0.5) * 8;
-                        const jitterY = (pseudoRandom(seed + 1) - 0.5) * 8;
+                        const jitterX = (pseudoRandom(seed) - 0.5) * 6;
+                        const jitterY = (pseudoRandom(seed + 1) - 0.5) * 6;
+
+                        const dateFormatted = `${monthNames[idx]} ${i + 1}`;
+                        const accessibilityText = `${dateFormatted}, ${
+                          hasMoments
+                            ? `${dayData.moments.length} memory logged`
+                            : 'No memories'
+                        }${isToday ? ' (Today)' : ''}`;
+
+                        const CellContent = (
+                          <TouchableOpacity
+                            activeOpacity={0.7}
+                            onPress={() => handleDayPress(dayData)}
+                            style={[
+                              styles.touchableCell,
+                              isToday && styles.todayCellContainer,
+                              { transform: [{ translateX: jitterX }, { translateY: jitterY }] },
+                            ]}
+                            accessible={true}
+                            accessibilityLabel={accessibilityText}
+                            accessibilityHint={
+                              hasMoments
+                                ? 'Tap to view memory'
+                                : isToday
+                                ? 'Tap to add today memory'
+                                : undefined
+                            }
+                            accessibilityRole="button"
+                          >
+                            {hasMoments ? (
+                              <AnimatedPlant emoji={plant} seed={seed} />
+                            ) : isToday ? (
+                              <Text style={styles.todaySprout}>🌱</Text>
+                            ) : (
+                              <Text style={[styles.emptyDot, { color: season.dot }]}>·</Text>
+                            )}
+                          </TouchableOpacity>
+                        );
 
                         return (
                           <View key={`day-wrap-${dayData.dateStr}`} style={styles.gridCell}>
-                            {/* Streak Vine */}
-                            {hasMoments && hasPrevDayMoment && (
-                              <View style={styles.streakVine} />
+                            {isToday ? (
+                              <TodayPulseRing>{CellContent}</TodayPulseRing>
+                            ) : (
+                              CellContent
                             )}
-                            
-                            <TouchableOpacity
-                              activeOpacity={0.7}
-                              onPress={() => hasMoments && handleDayPress(dayData)}
-                              disabled={!hasMoments}
-                              style={{ transform: [{ translateX: jitterX }, { translateY: jitterY }] }}
-                            >
-                              {hasMoments ? (
-                                <AnimatedPlant emoji={plant} seed={seed} />
-                              ) : (
-                                <Text style={[styles.emptyDot, { color: season.dot }]}>·</Text>
-                              )}
-                            </TouchableOpacity>
                           </View>
                         );
                       })}
@@ -235,6 +387,23 @@ export function MemoryTree({ days, isLoading, onBack }: MemoryTreeProps) {
         )}
       </ScrollView>
 
+      {/* Floating Jump to Today FAB */}
+      {showJumpToToday && (
+        <Animated.View entering={FadeIn.duration(200)} style={styles.fabContainer}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={handleJumpToToday}
+            style={styles.fabButton}
+            accessibilityLabel="Jump to Today"
+            accessibilityRole="button"
+          >
+            <Feather name="navigation" size={14} color="#ffffff" style={{ marginRight: 6 }} />
+            <Text style={styles.fabText}>Today</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      )}
+
+      {/* Moment Sheet Drawer */}
       <MomentSheet moment={selectedMoment} onClose={handleCloseSheet} />
     </GestureHandlerRootView>
   );
@@ -263,8 +432,8 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 40,
-    marginTop: 20,
+    marginBottom: 28,
+    marginTop: 16,
     paddingHorizontal: 20,
   },
   backBtn: {
@@ -282,36 +451,57 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   yearPill: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
     paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   yearText: {
     color: '#ffffff',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     fontFamily: 'Plus Jakarta Sans',
   },
   gardenContainerInner: {
     paddingBottom: 20,
   },
   monthBlock: {
-    marginBottom: 24,
+    marginBottom: 32,
     position: 'relative',
   },
   monthHeaderRow: {
     position: 'relative',
-    height: 30, // reserved space so butterfly doesn't overlap excessively with grid below
+    height: 32,
     justifyContent: 'center',
+    marginBottom: 6,
   },
   monthLabel: {
-    fontSize: 11,
-    color: '#8c7c6c',
+    fontSize: 12,
     fontFamily: 'Plus Jakarta Sans',
-    fontWeight: '700',
+    fontWeight: '800',
     textTransform: 'uppercase',
-    letterSpacing: 1.5,
+    letterSpacing: 1.6,
     marginLeft: 16,
+  },
+  weekdayHeaderRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 12,
+    marginBottom: 8,
+  },
+  weekdayCell: {
+    width: '14.28%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  weekdayLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#a39485',
+    fontFamily: 'Plus Jakarta Sans',
   },
   grid: {
     flexDirection: 'row',
@@ -326,22 +516,65 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     position: 'relative',
   },
-  streakVine: {
-    position: 'absolute',
-    left: '-50%',
-    top: '50%',
+  touchableCell: {
     width: '100%',
-    height: 2,
-    backgroundColor: '#8c7c6c',
-    opacity: 0.3,
-    zIndex: -1,
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  todayWrapper: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  todayGlowRing: {
+    position: 'absolute',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: '#7CB342',
+    backgroundColor: 'rgba(124, 179, 66, 0.15)',
+  },
+  todayCellContainer: {
+    borderRadius: 18,
+  },
+  todaySprout: {
+    fontSize: 22,
   },
   emptyDot: {
-    fontSize: 24, 
-    opacity: 0.8,
+    fontSize: 26,
+    fontWeight: '700',
   },
   plantEmoji: {
     fontSize: 22,
   },
   bottomPad: { height: 100 },
+  fabContainer: {
+    position: 'absolute',
+    bottom: 24,
+    right: 20,
+    zIndex: 100,
+  },
+  fabButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#7CB342',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  fabText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '700',
+    fontFamily: 'Plus Jakarta Sans',
+  },
 });
