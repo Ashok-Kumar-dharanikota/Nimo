@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion, useScroll, useTransform } from 'framer-motion';
-import { Image as ImageIcon } from 'lucide-react';
+import { Image as ImageIcon } from 'lucide-react-native';
 import React, { useRef } from 'react';
 
 // Imports from separated components and constants

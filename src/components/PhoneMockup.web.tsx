@@ -5,7 +5,7 @@ import {
   Flame,
   Image as ImageIcon,
   Plus
-} from 'lucide-react';
+} from 'lucide-react-native';
 import React from 'react';
 
 interface MomentItem {

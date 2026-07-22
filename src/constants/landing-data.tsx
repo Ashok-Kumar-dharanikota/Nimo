@@ -7,7 +7,7 @@ import {
   Image as ImageIcon,
   Phone,
   Moon
-} from 'lucide-react';
+} from 'lucide-react-native';
 
 export const allMoments = [
   // Morning Phase

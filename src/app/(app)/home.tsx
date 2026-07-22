@@ -4,25 +4,23 @@ import {
   View,
   Text,
   TouchableOpacity,
-  TextInput,
-  ActivityIndicator,
   RefreshControl,
 } from 'react-native';
+import Animated, { FadeInUp, FadeOutDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useHomeData } from '@/features/home/hooks/useHomeData';
 import { TopAppBar } from '@/features/home/components/TopAppBar';
 import { WeeklyStreaks } from '@/features/home/components/WeeklyStreaks';
-
-import { TodaysFlow } from '@/features/home/components/TodaysFlow';
 import { MemoryTree } from '@/features/home/components/tree/MemoryTree';
-import { analyzeSentiment } from '@/features/home/utils/sentiment';
+import { StorybookTimeline } from '@/features/home/components/StorybookTimeline';
+import { CaptureSheetModal } from '@/features/home/components/CaptureSheetModal';
+import { StorybookBottomNav } from '@/features/home/components/StorybookBottomNav';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 export default function Home() {
   const {
     weeklyStreaks,
-    recentEntries,
     todaysFlow,
     memoryTree,
     isLoading,
@@ -31,9 +29,10 @@ export default function Home() {
     refetch,
   } = useHomeData();
 
+  const [activeTab, setActiveTab] = useState<'timeline' | 'garden' | 'search' | 'profile'>('timeline');
   const [viewMode, setViewMode] = useState<'dashboard' | 'tree'>('dashboard');
-  const [quickMomentText, setQuickMomentText] = useState('');
-  const [selectedEmotion, setSelectedEmotion] = useState<string | null>(null);
+  const [captureOpen, setCaptureOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const handleRefresh = async () => {
@@ -46,26 +45,35 @@ export default function Home() {
     setRefreshing(false);
   };
 
-  const handleSaveQuickMoment = () => {
-    const trimmed = quickMomentText.trim();
-    if (!trimmed || isAddingMoment) return;
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    
-    // Use selected emotion or fallback to AI sentiment analysis
-    const emotionToSave = selectedEmotion || analyzeSentiment(trimmed);
-    
-    addQuickMoment({ content: trimmed, emotion: emotionToSave });
-    setQuickMomentText('');
-    setSelectedEmotion(null);
+  const handleTabSelect = (tab: 'timeline' | 'garden' | 'search' | 'profile') => {
+    setActiveTab(tab);
+    if (tab === 'garden') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setViewMode('tree');
+    } else if (tab === 'timeline') {
+      setViewMode('dashboard');
+    }
+  };
+
+  const handleSaveCapture = async (content: string, emotion?: string) => {
+    try {
+      await addQuickMoment({ content, emotion: emotion || null });
+      setToastMessage('A new leaf is growing 🌱');
+      setTimeout(() => setToastMessage(null), 2500);
+    } catch (err) {
+      console.error('Failed to save moment:', err);
+    }
   };
 
   const handleEnterGarden = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setActiveTab('garden');
     setViewMode('tree');
   };
 
   const handleBackToDashboard = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setActiveTab('timeline');
     setViewMode('dashboard');
   };
 
@@ -80,137 +88,114 @@ export default function Home() {
           isLoading={isLoading}
           onBack={handleBackToDashboard}
         />
+        {/* Floating Bottom Nav */}
+        <View className="absolute left-4 right-4 bottom-4 z-40">
+          <StorybookBottomNav
+            activeTab={activeTab}
+            onTabSelect={handleTabSelect}
+            onOpenCapture={() => setCaptureOpen(true)}
+          />
+        </View>
+        <CaptureSheetModal
+          visible={captureOpen}
+          onClose={() => setCaptureOpen(false)}
+          onSave={handleSaveCapture}
+          isSaving={isAddingMoment}
+        />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={['top']}>
-      {/* Dynamic Top App Bar */}
+    <SafeAreaView className="flex-1 bg-[#fbf9f4] relative" edges={['top']}>
+      {/* 1. Top App Header with Streaks, Greeting & Profile */}
       <TopAppBar moments={weeklyStreaks} />
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: 110 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#A4B47C" />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#566434" />
         }
       >
-        {/* Weekly Streaks Tracker */}
+        {/* 2. Weekly Streaks Row */}
         <View className="px-5">
           <WeeklyStreaks moments={weeklyStreaks} />
         </View>
 
-        {/* Memory Garden Feature Card */}
-        <View className="px-5 mb-6">
+        {/* 3. Memory Garden Feature Banner */}
+        <View className="px-5 mb-4">
           <TouchableOpacity
             activeOpacity={0.9}
             onPress={handleEnterGarden}
-            className="bg-secondary rounded-[32px] p-6 shadow-md border border-white/10 overflow-hidden relative"
+            className="bg-[#566434] rounded-[28px] p-5 shadow-md border border-white/10 overflow-hidden relative"
           >
-            {/* Soft decorative blur circles to make it feel premium */}
             <View className="absolute -right-12 -top-12 w-36 h-36 bg-white/5 rounded-full" />
-            <View className="absolute -left-12 -bottom-12 w-36 h-36 bg-white/5 rounded-full" />
-
             <View className="flex-row items-center justify-between z-10">
               <View className="flex-1 pr-4">
                 <Text className="font-jakarta text-[11px] font-bold text-white/60 tracking-wider uppercase mb-1">
                   Memory Garden
                 </Text>
-                <Text className="font-jakarta text-2xl font-bold text-white leading-tight mb-2">
+                <Text className="font-playfair text-xl font-bold text-white leading-tight mb-1.5">
                   Your Tree is Thriving
                 </Text>
-                <Text className="font-jakarta text-[13px] text-white/80 leading-normal mb-4">
+                <Text className="font-jakarta text-[12.5px] text-white/80 leading-snug mb-3">
                   {leavesCount === 0
-                    ? "A seed is waiting to sprout. Plant your first reflection to grow a leaf of memory."
-                    : `You have nurtured ${leavesCount} leaf${leavesCount === 1 ? '' : 'ves'} in the last fortnight. Walk among your memories.`}
+                    ? 'Plant your first reflection to grow a leaf of memory.'
+                    : `You have nurtured ${leavesCount} leaf${leavesCount === 1 ? '' : 'ves'}. Walk among your memories.`}
                 </Text>
-                
-                <View className="flex-row items-center gap-2 bg-white/15 self-start px-4.5 py-2.5 rounded-full border border-white/10 active:bg-white/25">
-                  <Text className="font-jakarta text-xs font-bold text-white">
-                    Explore Tree
+                <View className="flex-row items-center gap-2 bg-white/15 self-start px-3.5 py-1.5 rounded-full border border-white/10">
+                  <Text className="font-jakarta text-[11.5px] font-bold text-white">
+                    Explore Garden
                   </Text>
-                  <Feather name="arrow-right" size={14} color="white" />
+                  <Feather name="arrow-right" size={13} color="white" />
                 </View>
               </View>
-
-              <View className="w-18 h-18 bg-white/10 rounded-2xl items-center justify-center border border-white/10">
-                <Text className="text-4xl">🌳</Text>
+              <View className="w-14 h-14 bg-white/10 rounded-2xl items-center justify-center border border-white/10">
+                <Text className="text-3xl">🌳</Text>
               </View>
             </View>
           </TouchableOpacity>
         </View>
 
-        {/* Quick Reflection Assistant */}
-        <View className="px-5 mb-6">
-          <View className="bg-surfaceContainerLowest rounded-[32px] p-6 shadow-sm border border-outlineVariant/15 relative">
-            <View className="flex-row items-center gap-2.5 mb-4">
-              <View className="w-8 h-8 rounded-full bg-secondary/10 items-center justify-center">
-                <Text className="text-sm">🌿</Text>
-              </View>
-              <Text className="font-jakarta text-base font-bold text-primary">
-                Quick Reflection
-              </Text>
-            </View>
-
-            <TextInput
-              className="w-full bg-surfaceContainerLow/50 rounded-[20px] px-4 py-3.5 font-jakarta text-[14px] text-primary min-h-[88px] border border-outlineVariant/10 focus:border-secondary"
-              placeholder="What is keeping you grounded in this moment?"
-              placeholderTextColor="#8c7c6c"
-              multiline
-              textAlignVertical="top"
-              value={quickMomentText}
-              onChangeText={setQuickMomentText}
-            />
-
-            <View className="flex-row justify-between items-center mt-3.5">
-              <View className="flex-row items-center gap-2">
-                {['🌱', '🌻', '🪷', '🍄'].map((emoji) => (
-                  <TouchableOpacity
-                    key={emoji}
-                    activeOpacity={0.7}
-                    onPress={() => setSelectedEmotion(emoji === selectedEmotion ? null : emoji)}
-                    className={`w-9 h-9 items-center justify-center rounded-full border ${
-                      selectedEmotion === emoji 
-                        ? 'border-primary bg-primary/10' 
-                        : 'border-outlineVariant/20 bg-surfaceContainerLowest'
-                    }`}
-                  >
-                    <Text className="text-base">{emoji}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <TouchableOpacity
-                onPress={handleSaveQuickMoment}
-                disabled={!quickMomentText.trim() || isAddingMoment}
-                activeOpacity={0.8}
-                className={`bg-primary px-5 py-2.5 rounded-full flex-row items-center gap-1.5 shadow-sm ${
-                  !quickMomentText.trim() || isAddingMoment ? 'opacity-50' : 'opacity-100'
-                }`}
-              >
-                {isAddingMoment ? (
-                  <ActivityIndicator size="small" color="white" />
-                ) : (
-                  <>
-                    <Text className="font-jakarta text-xs font-bold text-white">
-                      Grow Leaf
-                    </Text>
-                    <Feather name="plus" size={13} color="white" />
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-
-
-
-        {/* Today's Flow Timeline */}
-        <TodaysFlow moments={todaysFlow} />
+        {/* 4. Storybook Timeline Feed (Direction 1a) */}
+        <StorybookTimeline
+          moments={todaysFlow}
+          onOpenCalendar={() => handleTabSelect('garden')}
+          onOpenSearch={() => handleTabSelect('search')}
+        />
       </ScrollView>
+
+      {/* Floating Animated Toast Notification */}
+      {toastMessage && (
+        <Animated.View
+          entering={FadeInUp.duration(250)}
+          exiting={FadeOutDown.duration(200)}
+          className="absolute left-1/2 -translate-x-1/2 bottom-24 z-50 bg-[#27170c] px-5 py-3 rounded-full shadow-lg border border-white/10"
+        >
+          <Text className="font-jakarta text-[13px] font-semibold text-[#fbf9f4]">
+            {toastMessage}
+          </Text>
+        </Animated.View>
+      )}
+
+      {/* Floating Glassmorphic Bottom Navigation Bar */}
+      <View className="absolute left-3.5 right-3.5 bottom-3.5 z-40">
+        <StorybookBottomNav
+          activeTab={activeTab}
+          onTabSelect={handleTabSelect}
+          onOpenCapture={() => setCaptureOpen(true)}
+        />
+      </View>
+
+      {/* Capture Sheet Modal */}
+      <CaptureSheetModal
+        visible={captureOpen}
+        onClose={() => setCaptureOpen(false)}
+        onSave={handleSaveCapture}
+        isSaving={isAddingMoment}
+      />
     </SafeAreaView>
   );
 }
-

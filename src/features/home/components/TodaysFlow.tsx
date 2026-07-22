@@ -23,7 +23,7 @@ export const TodaysFlow = ({ moments }: TodaysFlowProps) => {
   return (
     <Animated.View entering={FadeInDown.duration(400).delay(300)} className="bg-surfaceContainerLowest rounded-[32px] p-8 mx-6 shadow-sm border border-outlineVariant/20 min-h-[500px]">
       <View className="flex-row justify-between items-center mb-8">
-        <Text className="font-jakarta text-2xl font-bold text-primary tracking-tight">Today's Flow</Text>
+        <Text className="font-jakarta text-2xl font-bold text-primary tracking-tight">Today&apos;s Flow</Text>
         <TouchableOpacity className="w-10 h-10 rounded-full bg-primary/5 items-center justify-center border border-primary/10">
           <Feather name="calendar" size={18} color="#27170c" />
         </TouchableOpacity>
@@ -42,7 +42,7 @@ export const TodaysFlow = ({ moments }: TodaysFlowProps) => {
               </View>
               <Text className="font-jakarta text-lg font-bold text-primary">A blank slate</Text>
               <Text className="font-jakarta text-sm text-onSurfaceVariant/70 text-center mt-2 px-4 leading-relaxed">
-                Take a moment to pause, breathe, and record how you're feeling right now.
+                Take a moment to pause, breathe, and record how you&apos;re feeling right now.
               </Text>
             </View>
           ) : (
