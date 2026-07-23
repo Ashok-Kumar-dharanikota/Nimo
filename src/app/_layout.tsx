@@ -13,6 +13,10 @@ import { StatusBar } from 'expo-status-bar';
 import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
 import migrations from '@/db/migrations/migrations';
 import { db } from '@/db';
+import { setupExecutorch } from '@/lib/executorch';
+
+// Initialize ExecuTorch resource fetcher for on-device models
+setupExecutorch();
 
 const queryClient = new QueryClient();
 

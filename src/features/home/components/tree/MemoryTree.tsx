@@ -1,13 +1,16 @@
-import React, { useCallback, useState, useRef, useEffect } from 'react';
+import { Feather, MaterialIcons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
   ActivityIndicator,
-  StyleSheet,
-  NativeSyntheticEvent,
+  Image,
   NativeScrollEvent,
+  NativeSyntheticEvent,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
@@ -18,10 +21,8 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import { MaterialIcons, Feather } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import type { DayData, MomentItem } from '../../services/homeService';
-import { MomentSheet } from './MomentSheet';
+import { FloatingMomentTooltip } from './FloatingMomentTooltip';
 
 interface MemoryTreeProps {
   days: DayData[];
@@ -49,71 +50,13 @@ const getSeasonTheme = (monthIndex: number) => {
   return { dot: '#0288D1', bg: 'rgba(2, 136, 209, 0.12)', label: '#01579B' };
 };
 
-const AnimatedPlant = ({ emoji, seed }: { emoji: string; seed: number }) => {
-  const rotation = useSharedValue(0);
-
-  useEffect(() => {
-    const delay = pseudoRandom(seed) * 2000;
-    const timeout = setTimeout(() => {
-      rotation.value = withRepeat(
-        withSequence(
-          withTiming(6, { duration: 1500 }),
-          withTiming(-6, { duration: 1500 }),
-          withTiming(0, { duration: 1500 })
-        ),
-        -1,
-        true
-      );
-    }, delay);
-    return () => clearTimeout(timeout);
-  }, [seed]);
-
-  const style = useAnimatedStyle(() => ({
-    transform: [{ rotateZ: `${rotation.value}deg` }],
-  }));
-
+const StaticSprout = ({ opacity = 1 }: { opacity?: number }) => {
   return (
-    <Animated.View style={style}>
-      <Text style={styles.plantEmoji}>{emoji}</Text>
-    </Animated.View>
-  );
-};
-
-const Butterfly = () => {
-  const translateY = useSharedValue(0);
-  const translateX = useSharedValue(0);
-
-  useEffect(() => {
-    translateY.value = withRepeat(
-      withSequence(
-        withTiming(-15, { duration: 800 }),
-        withTiming(10, { duration: 1200 })
-      ),
-      -1,
-      true
-    );
-    translateX.value = withRepeat(
-      withSequence(
-        withTiming(20, { duration: 2000 }),
-        withTiming(-20, { duration: 2500 })
-      ),
-      -1,
-      true
-    );
-  }, []);
-
-  const style = useAnimatedStyle(() => ({
-    position: 'absolute',
-    top: 20,
-    right: 40,
-    transform: [
-      { translateY: translateY.value },
-      { translateX: translateX.value },
-    ],
-  }));
-
-  return (
-    <Animated.Text style={[style, { fontSize: 24, zIndex: 10 }]}>🦋</Animated.Text>
+    <Image
+      source={require('../../../../../assets/images/nimo/sprout.png')}
+      style={[styles.sproutImage, { opacity }]}
+      resizeMode="contain"
+    />
   );
 };
 
@@ -208,21 +151,6 @@ export function MemoryTree({ days, isLoading, onBack, onSelectEmptyDay }: Memory
     }
   }, []);
 
-  const getPlantEmoji = (day: DayData) => {
-    const count = day.moments.length;
-    if (count === 0) return '';
-    const firstMoment = day.moments[0];
-    
-    // Explicit emotion emoji if set
-    if (firstMoment.emotion) return firstMoment.emotion;
-
-    // Dynamic plant growth progression based on moment count
-    if (count === 1) return '🌱';
-    if (count === 2) return '🪴';
-    if (count >= 3) return '🌸';
-    return '🌳';
-  };
-
   return (
     <GestureHandlerRootView style={styles.root}>
       <ScrollView
@@ -299,7 +227,6 @@ export function MemoryTree({ days, isLoading, onBack, onSelectEmptyDay }: Memory
                       <Text style={[styles.monthLabel, { color: season.label }]}>
                         {monthNames[idx]}
                       </Text>
-                      {isCurrentMonth && <Butterfly />}
                     </View>
 
                     {/* Weekday Row Header (S M T W T F S) */}
@@ -321,7 +248,6 @@ export function MemoryTree({ days, isLoading, onBack, onSelectEmptyDay }: Memory
                       {/* Actual Days */}
                       {monthDays.map((dayData, i) => {
                         const hasMoments = dayData.moments.length > 0;
-                        const plant = getPlantEmoji(dayData);
                         const isToday = dayData.isToday;
 
                         // Seeded random jitter for organic terrain
@@ -330,11 +256,10 @@ export function MemoryTree({ days, isLoading, onBack, onSelectEmptyDay }: Memory
                         const jitterY = (pseudoRandom(seed + 1) - 0.5) * 6;
 
                         const dateFormatted = `${monthNames[idx]} ${i + 1}`;
-                        const accessibilityText = `${dateFormatted}, ${
-                          hasMoments
-                            ? `${dayData.moments.length} memory logged`
-                            : 'No memories'
-                        }${isToday ? ' (Today)' : ''}`;
+                        const accessibilityText = `${dateFormatted}, ${hasMoments
+                          ? `${dayData.moments.length} memory logged`
+                          : 'No memories'
+                          }${isToday ? ' (Today)' : ''}`;
 
                         const CellContent = (
                           <TouchableOpacity
@@ -351,15 +276,15 @@ export function MemoryTree({ days, isLoading, onBack, onSelectEmptyDay }: Memory
                               hasMoments
                                 ? 'Tap to view memory'
                                 : isToday
-                                ? 'Tap to add today memory'
-                                : undefined
+                                  ? 'Tap to add today memory'
+                                  : undefined
                             }
                             accessibilityRole="button"
                           >
                             {hasMoments ? (
-                              <AnimatedPlant emoji={plant} seed={seed} />
+                              <StaticSprout opacity={1} />
                             ) : isToday ? (
-                              <Text style={styles.todaySprout}>🌱</Text>
+                              <StaticSprout opacity={0.6} />
                             ) : (
                               <Text style={[styles.emptyDot, { color: season.dot }]}>·</Text>
                             )}
@@ -403,8 +328,8 @@ export function MemoryTree({ days, isLoading, onBack, onSelectEmptyDay }: Memory
         </Animated.View>
       )}
 
-      {/* Moment Sheet Drawer */}
-      <MomentSheet moment={selectedMoment} onClose={handleCloseSheet} />
+      {/* Floating Tooltip Card (replaces bottom sheet) */}
+      <FloatingMomentTooltip moment={selectedMoment} onClose={handleCloseSheet} />
     </GestureHandlerRootView>
   );
 }
@@ -541,15 +466,13 @@ const styles = StyleSheet.create({
   todayCellContainer: {
     borderRadius: 18,
   },
-  todaySprout: {
-    fontSize: 22,
+  sproutImage: {
+    width: 28,
+    height: 28,
   },
   emptyDot: {
     fontSize: 26,
     fontWeight: '700',
-  },
-  plantEmoji: {
-    fontSize: 22,
   },
   bottomPad: { height: 100 },
   fabContainer: {

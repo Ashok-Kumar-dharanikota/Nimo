@@ -72,5 +72,8 @@
     "lint": "expo lint",
     "db:generate": "drizzle-kit generate"
   },
+  "op-sqlite": {
+    "libsql": true
+  },
   "private": true
 }

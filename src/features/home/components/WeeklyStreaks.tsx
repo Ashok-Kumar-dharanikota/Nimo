@@ -1,7 +1,7 @@
-import { Feather } from "@expo/vector-icons";
 import { Text, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
+import { Check } from "lucide-react-native";
 import {
   formatSQLiteDate,
   getCurrentWeekDates,
@@ -67,7 +67,7 @@ export function WeeklyStreaks({ moments }: WeeklyStreaksProps) {
               className={`w-9 h-9 rounded-full items-center justify-center border ${circleStyle}`}
             >
               {completed ? (
-                <Text className="text-xs">🌿</Text>
+                <Check size={16} />
               ) : isToday ? (
                 <View className="w-2.5 h-2.5 rounded-full bg-primary" />
               ) : (
@@ -78,7 +78,7 @@ export function WeeklyStreaks({ moments }: WeeklyStreaksProps) {
             <Text
               className={`text-[9px] font-semibold ${dateStyle}`}
             >
-              {completed ? `${date.getDate()} ✓` : date.getDate()}
+              {completed ? "" : isToday ? "Today" : ""}
             </Text>
 
           </View>

@@ -2,6 +2,7 @@ import { db } from '@/db';
 import { journal, moment } from '@/db/schema';
 import { eq, desc, sql, count, gte } from 'drizzle-orm';
 import { formatDateForSQLite } from '../utils/dateUtils';
+import { ragService } from '@/lib/ragService';
 
 export type MomentItem = {
   id: number;
@@ -9,6 +10,9 @@ export type MomentItem = {
   createdAt: string;
   journalTitle: string | null;
   emotion: string | null;
+  title: string | null;
+  mediaUri: string | null;
+  mediaType: 'photo' | 'video' | null;
 };
 
 export type DayData = {
@@ -51,7 +55,10 @@ export const getTodaysFlow = async () => {
       content: moment.content,
       createdAt: moment.createdAt,
       journalTitle: journal.title,
-      emotion: moment.emotion
+      emotion: moment.emotion,
+      title: moment.title,
+      mediaUri: moment.mediaUri,
+      mediaType: moment.mediaType,
     })
     .from(moment)
     .leftJoin(journal, eq(moment.journalId, journal.id))
@@ -61,9 +68,15 @@ export const getTodaysFlow = async () => {
   return todaysMoments;
 };
 
-export const addQuickMoment = async (content: string, emotion: string | null = null) => {
+export const addQuickMoment = async (
+  content: string,
+  emotion: string | null = null,
+  title: string | null = null,
+  mediaUri: string | null = null,
+  mediaType: string | null = null,
+) => {
   try {
-    console.log('[Nimo] addQuickMoment called with:', content, emotion);
+    console.log('[Nimo] addQuickMoment called with:', content, emotion, title, mediaUri, mediaType);
     // Find or create a "Quick Thoughts" journal
     let defaultJournal = await db.select().from(journal).where(eq(journal.title, 'Quick Thoughts')).limit(1);
     
@@ -78,12 +91,24 @@ export const addQuickMoment = async (content: string, emotion: string | null = n
       journalId = defaultJournal[0].id;
     }
 
-    await db.insert(moment).values({
+    const insertedMoment = await db.insert(moment).values({
       content,
       journalId,
       emotion,
-    });
-    console.log('[Nimo] Moment saved successfully, journalId:', journalId);
+      title,
+      mediaUri,
+      mediaType,
+    }).returning({ id: moment.id });
+
+    const momentId = insertedMoment[0]?.id;
+    console.log('[Nimo] Moment saved successfully, journalId:', journalId, 'momentId:', momentId);
+
+    // Asynchronously index moment into RAG vector store (non-blocking)
+    if (momentId) {
+      ragService.indexMoment(momentId, content, emotion, title).catch((err) => {
+        console.warn('[Nimo] Background RAG indexing error:', err);
+      });
+    }
   } catch (err) {
     console.error('[Nimo] addQuickMoment failed:', err);
     throw err;
@@ -107,6 +132,9 @@ export const getMomentsForCurrentYear = async (): Promise<DayData[]> => {
       createdAt: moment.createdAt,
       journalTitle: journal.title,
       emotion: moment.emotion,
+      title: moment.title,
+      mediaUri: moment.mediaUri,
+      mediaType: moment.mediaType,
     })
     .from(moment)
     .leftJoin(journal, eq(moment.journalId, journal.id))
@@ -128,6 +156,9 @@ export const getMomentsForCurrentYear = async (): Promise<DayData[]> => {
       createdAt: row.createdAt,
       journalTitle: row.journalTitle ?? null,
       emotion: row.emotion,
+      title: row.title ?? null,
+      mediaUri: row.mediaUri ?? null,
+      mediaType: (row.mediaType as 'photo' | 'video' | null) ?? null,
     });
   }
 
@@ -153,4 +184,7 @@ export const getMomentsForCurrentYear = async (): Promise<DayData[]> => {
 
   return result;
 };
+
+
+
 

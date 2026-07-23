@@ -1,22 +1,27 @@
-import React, { useState } from 'react';
-import {
-  ScrollView,
-  View,
-  Text,
-  TouchableOpacity,
-  RefreshControl,
-} from 'react-native';
-import Animated, { FadeInUp, FadeOutDown } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useHomeData } from '@/features/home/hooks/useHomeData';
+import { CaptureSheetModal } from '@/features/home/components/CaptureSheetModal';
+import { StorybookBottomNav } from '@/features/home/components/StorybookBottomNav';
+import { StorybookTimeline } from '@/features/home/components/StorybookTimeline';
 import { TopAppBar } from '@/features/home/components/TopAppBar';
 import { WeeklyStreaks } from '@/features/home/components/WeeklyStreaks';
 import { MemoryTree } from '@/features/home/components/tree/MemoryTree';
-import { StorybookTimeline } from '@/features/home/components/StorybookTimeline';
-import { CaptureSheetModal } from '@/features/home/components/CaptureSheetModal';
-import { StorybookBottomNav } from '@/features/home/components/StorybookBottomNav';
-import { Feather } from '@expo/vector-icons';
+import { useHomeData } from '@/features/home/hooks/useHomeData';
+import { NimoAIChat } from '@/features/ai/components/NimoAIChat';
+import { ProfileScreen } from '@/features/profile/components/ProfileScreen';
 import * as Haptics from 'expo-haptics';
+import { ArrowRight } from 'lucide-react-native';
+import { useState } from 'react';
+import {
+  Image,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import Animated, { FadeInUp, FadeOutDown } from 'react-native-reanimated';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+export type BottomTab = 'timeline' | 'garden' | 'nimo-ai' | 'profile';
 
 export default function Home() {
   const {
@@ -29,7 +34,7 @@ export default function Home() {
     refetch,
   } = useHomeData();
 
-  const [activeTab, setActiveTab] = useState<'timeline' | 'garden' | 'search' | 'profile'>('timeline');
+  const [activeTab, setActiveTab] = useState<BottomTab>('timeline');
   const [viewMode, setViewMode] = useState<'dashboard' | 'tree'>('dashboard');
   const [captureOpen, setCaptureOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -45,7 +50,7 @@ export default function Home() {
     setRefreshing(false);
   };
 
-  const handleTabSelect = (tab: 'timeline' | 'garden' | 'search' | 'profile') => {
+  const handleTabSelect = (tab: BottomTab) => {
     setActiveTab(tab);
     if (tab === 'garden') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -55,14 +60,26 @@ export default function Home() {
     }
   };
 
-  const handleSaveCapture = async (content: string, emotion?: string) => {
+  const handleSaveCapture = async (
+    content: string,
+    emotion?: string,
+    mediaUri?: string,
+    mediaType?: 'photo' | 'video',
+    title?: string
+  ) => {
     try {
-      await addQuickMoment({ content, emotion: emotion || null });
-      setToastMessage('A new leaf is growing 🌱');
+      await addQuickMoment({ content, emotion, title, mediaUri, mediaType });
+      setToastMessage('A new moment has been planted');
       setTimeout(() => setToastMessage(null), 2500);
     } catch (err) {
       console.error('Failed to save moment:', err);
     }
+  };
+
+  const handleOpenCalendar = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    setToastMessage('📅 Date picker not available — install @react-native-community/datetimepicker');
+    setTimeout(() => setToastMessage(null), 3000);
   };
 
   const handleEnterGarden = () => {
@@ -80,6 +97,7 @@ export default function Home() {
   // Compute total moments / leaves grown
   const leavesCount = memoryTree.reduce((acc, day) => acc + (day.moments?.length || 0), 0);
 
+  // ─── Garden / Tree View ───────────────────────────
   if (viewMode === 'tree') {
     return (
       <SafeAreaView className="flex-1 bg-background" edges={['top']}>
@@ -106,6 +124,57 @@ export default function Home() {
     );
   }
 
+  // ─── Nimo AI Tab ──────────────────────────────────
+  if (activeTab === 'nimo-ai') {
+    return (
+      <SafeAreaView className="flex-1 bg-[#fbf9f4] relative" edges={['top']}>
+        <NimoAIChat />
+
+        {/* Floating Bottom Nav */}
+        <View className="absolute left-3.5 right-3.5 bottom-3.5 z-40">
+          <StorybookBottomNav
+            activeTab={activeTab}
+            onTabSelect={handleTabSelect}
+            onOpenCapture={() => setCaptureOpen(true)}
+          />
+        </View>
+
+        <CaptureSheetModal
+          visible={captureOpen}
+          onClose={() => setCaptureOpen(false)}
+          onSave={handleSaveCapture}
+          isSaving={isAddingMoment}
+        />
+      </SafeAreaView>
+    );
+  }
+
+  // ─── Profile Tab ──────────────────────────────────
+  if (activeTab === 'profile') {
+    return (
+      <SafeAreaView className="flex-1 bg-[#fbf9f4] relative" edges={['top']}>
+        <ProfileScreen />
+
+        {/* Floating Bottom Nav */}
+        <View className="absolute left-3.5 right-3.5 bottom-3.5 z-40">
+          <StorybookBottomNav
+            activeTab={activeTab}
+            onTabSelect={handleTabSelect}
+            onOpenCapture={() => setCaptureOpen(true)}
+          />
+        </View>
+
+        <CaptureSheetModal
+          visible={captureOpen}
+          onClose={() => setCaptureOpen(false)}
+          onSave={handleSaveCapture}
+          isSaving={isAddingMoment}
+        />
+      </SafeAreaView>
+    );
+  }
+
+  // ─── Default: Timeline Dashboard ──────────────────
   return (
     <SafeAreaView className="flex-1 bg-[#fbf9f4] relative" edges={['top']}>
       {/* 1. Top App Header with Streaks, Greeting & Profile */}
@@ -113,7 +182,7 @@ export default function Home() {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: 110 }}
+        contentContainerStyle={{ paddingBottom: 140 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#566434" />
@@ -138,7 +207,7 @@ export default function Home() {
                   Memory Garden
                 </Text>
                 <Text className="font-playfair text-xl font-bold text-white leading-tight mb-1.5">
-                  Your Tree is Thriving
+                  Your Garden is Thriving
                 </Text>
                 <Text className="font-jakarta text-[12.5px] text-white/80 leading-snug mb-3">
                   {leavesCount === 0
@@ -149,11 +218,15 @@ export default function Home() {
                   <Text className="font-jakarta text-[11.5px] font-bold text-white">
                     Explore Garden
                   </Text>
-                  <Feather name="arrow-right" size={13} color="white" />
+                  <ArrowRight size={13} color="white" />
                 </View>
               </View>
-              <View className="w-14 h-14 bg-white/10 rounded-2xl items-center justify-center border border-white/10">
-                <Text className="text-3xl">🌳</Text>
+              <View className="w-12 h-12 bg-white/10 rounded-2xl items-center justify-center border border-white/10 p-2 overflow-hidden">
+                <Image
+                  source={require('../../../assets/images/nimo/sprout.png')}
+                  className="w-full h-full"
+                  resizeMode="contain"
+                />
               </View>
             </View>
           </TouchableOpacity>
@@ -162,8 +235,8 @@ export default function Home() {
         {/* 4. Storybook Timeline Feed (Direction 1a) */}
         <StorybookTimeline
           moments={todaysFlow}
-          onOpenCalendar={() => handleTabSelect('garden')}
-          onOpenSearch={() => handleTabSelect('search')}
+          onOpenCalendar={handleOpenCalendar}
+          onOpenSearch={() => handleTabSelect('nimo-ai')}
         />
       </ScrollView>
 

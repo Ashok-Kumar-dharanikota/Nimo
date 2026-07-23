@@ -1,11 +1,11 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 interface StorybookBottomNavProps {
-  activeTab: 'timeline' | 'garden' | 'search' | 'profile';
-  onTabSelect: (tab: 'timeline' | 'garden' | 'search' | 'profile') => void;
+  activeTab: 'timeline' | 'garden' | 'nimo-ai' | 'profile';
+  onTabSelect: (tab: 'timeline' | 'garden' | 'nimo-ai' | 'profile') => void;
   onOpenCapture: () => void;
 }
 
@@ -28,6 +28,9 @@ export function StorybookBottomNav({
       {/* 1. Timeline */}
       <TouchableOpacity
         activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel="Timeline"
+        accessibilityState={{ selected: activeTab === 'timeline' }}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           onTabSelect('timeline');
@@ -51,6 +54,9 @@ export function StorybookBottomNav({
       {/* 2. Garden */}
       <TouchableOpacity
         activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel="Garden"
+        accessibilityState={{ selected: activeTab === 'garden' }}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           onTabSelect('garden');
@@ -74,6 +80,8 @@ export function StorybookBottomNav({
       {/* 3. Center Elevated + Capture Button */}
       <TouchableOpacity
         activeOpacity={0.85}
+        accessibilityRole="button"
+        accessibilityLabel="Add Moment"
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           onOpenCapture();
@@ -90,32 +98,38 @@ export function StorybookBottomNav({
         <Feather name="plus" size={26} color="#ffffff" />
       </TouchableOpacity>
 
-      {/* 4. Search */}
+      {/* 4. Nimo AI */}
       <TouchableOpacity
         activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel="Nimo AI"
+        accessibilityState={{ selected: activeTab === 'nimo-ai' }}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          onTabSelect('search');
+          onTabSelect('nimo-ai');
         }}
         className="items-center justify-center gap-0.5 px-3 py-1"
       >
         <Feather
-          name="search"
+          name="cpu"
           size={20}
-          color={activeTab === 'search' ? '#566434' : '#a89a8b'}
+          color={activeTab === 'nimo-ai' ? '#566434' : '#a89a8b'}
         />
         <Text
           className={`font-jakarta text-[9.5px] ${
-            activeTab === 'search' ? 'font-bold text-[#566434]' : 'font-semibold text-[#a89a8b]'
+            activeTab === 'nimo-ai' ? 'font-bold text-[#566434]' : 'font-semibold text-[#a89a8b]'
           }`}
         >
-          Search
+          Nimo AI
         </Text>
       </TouchableOpacity>
 
       {/* 5. Profile */}
       <TouchableOpacity
         activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel="Profile"
+        accessibilityState={{ selected: activeTab === 'profile' }}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           onTabSelect('profile');

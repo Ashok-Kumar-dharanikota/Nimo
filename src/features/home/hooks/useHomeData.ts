@@ -31,13 +31,20 @@ export const useHomeData = () => {
   });
 
   const addMomentMutation = useMutation({
-    mutationFn: ({ content, emotion }: { content: string, emotion?: string }) => addQuickMoment(content, emotion),
+    mutationFn: ({ content, emotion, title, mediaUri, mediaType }: {
+      content: string;
+      emotion?: string | null;
+      title?: string | null;
+      mediaUri?: string | null;
+      mediaType?: string | null;
+    }) =>
+      addQuickMoment(content, emotion ?? null, title ?? null, mediaUri ?? null, mediaType ?? null),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['weeklyStreaks'] });
       queryClient.invalidateQueries({ queryKey: ['recentEntries'] });
       queryClient.invalidateQueries({ queryKey: ['todaysFlow'] });
       queryClient.invalidateQueries({ queryKey: ['memoryTree'] });
-    }
+    },
   });
 
   return {
@@ -46,7 +53,7 @@ export const useHomeData = () => {
     todaysFlow: todaysFlowQuery.data || [],
     memoryTree: memoryTreeQuery.data || [],
     isLoading: memoryTreeQuery.isLoading, // only gate on tree query
-    addQuickMoment: addMomentMutation.mutate,
+    addQuickMoment: addMomentMutation.mutateAsync,
     isAddingMoment: addMomentMutation.isPending,
     refetch: () => {
       weeklyStreaksQuery.refetch();

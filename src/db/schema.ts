@@ -23,6 +23,9 @@ export const moment = sqliteTable("moment", {
     .references(() => journal.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
   emotion: text("emotion"),
+  title: text("title"),
+  mediaUri: text("media_uri"),
+  mediaType: text("media_type"),
   createdAt: text("created_at")
     .default(sql`(CURRENT_TIMESTAMP)`)
     .notNull(),
