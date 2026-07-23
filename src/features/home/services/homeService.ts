@@ -46,7 +46,7 @@ export const getRecentEntries = async () => {
   return result;
 };
 
-export const getTodaysFlow = async () => {
+export const getTodaysFlow = async (): Promise<MomentItem[]> => {
   const todayStr = formatDateForSQLite(new Date()); 
   
   const todaysMoments = await db
@@ -65,7 +65,16 @@ export const getTodaysFlow = async () => {
     .where(sql`date(${moment.createdAt}, 'localtime') = ${todayStr}`)
     .orderBy(desc(moment.createdAt));
 
-  return todaysMoments;
+  return todaysMoments.map((row) => ({
+    id: row.id,
+    content: row.content,
+    createdAt: row.createdAt,
+    journalTitle: row.journalTitle ?? null,
+    emotion: row.emotion,
+    title: row.title ?? null,
+    mediaUri: row.mediaUri ?? null,
+    mediaType: (row.mediaType as 'photo' | 'video' | null) ?? null,
+  }));
 };
 
 export const addQuickMoment = async (

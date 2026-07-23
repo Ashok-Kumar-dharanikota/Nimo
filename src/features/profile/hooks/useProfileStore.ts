@@ -72,7 +72,7 @@ export function useProfileStore() {
     if (updates.email !== undefined) storage.set(KEYS.email, updates.email);
     if (updates.avatarUri !== undefined) {
       if (updates.avatarUri === null) {
-        storage.delete(KEYS.avatarUri);
+        storage.remove(KEYS.avatarUri);
       } else {
         storage.set(KEYS.avatarUri, updates.avatarUri);
       }
@@ -84,7 +84,7 @@ export function useProfileStore() {
   }, []);
 
   const clearProfile = useCallback(() => {
-    Object.values(KEYS).forEach((key) => storage.delete(key));
+    Object.values(KEYS).forEach((key) => storage.remove(key));
     emitChange();
   }, []);
 

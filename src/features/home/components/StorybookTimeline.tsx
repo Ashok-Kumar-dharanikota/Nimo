@@ -3,7 +3,9 @@ import { View, Text, TouchableOpacity, Image } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Calendar, Search, Play, Smile, Sparkles, Heart, Sun, Coffee, Sparkle } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+import { router } from 'expo-router';
 import { formatTime } from '../utils/dateUtils';
+import { MomentVideoPlayer } from './MomentVideoPlayer';
 
 interface MomentData {
   id: number;
@@ -129,7 +131,11 @@ export function StorybookTimeline({
             activeOpacity={0.7}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onOpenSearch?.();
+              if (onOpenSearch) {
+                onOpenSearch();
+              } else {
+                router.push('/(app)/search');
+              }
             }}
             className="w-10 h-10 rounded-full bg-[#f0eee9] items-center justify-center border border-[#e4e2dd]"
           >
@@ -185,14 +191,11 @@ export function StorybookTimeline({
                   <View className="bg-white rounded-[22px] p-4 border border-[#efe9e1] shadow-sm">
                     {/* Media Display if user picked image/video from phone */}
                     {moment.mediaUri ? (
-                      <View className="mb-3 rounded-[16px] overflow-hidden h-[150px] bg-[#1c1a17] relative">
+                      <View className="mb-3 rounded-[16px] overflow-hidden w-full aspect-square bg-[#1c1a17] relative">
                         {moment.mediaType === 'video' ? (
-                          <View className="w-full h-full bg-[#1c1a17] items-center justify-center">
-                            <Play size={32} color="#ffffff" />
-                            <Text className="font-jakarta text-[11px] text-white/70 mt-1">Video</Text>
-                          </View>
+                          <MomentVideoPlayer uri={moment.mediaUri} aspectRatio={1} />
                         ) : (
-                          <Image source={{ uri: moment.mediaUri }} className="w-full h-full" resizeMode="cover" />
+                          <Image source={{ uri: moment.mediaUri }} className="w-full h-full aspect-square" resizeMode="cover" />
                         )}
                       </View>
                     ) : null}

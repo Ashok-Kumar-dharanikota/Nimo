@@ -1,13 +1,12 @@
+import { NimoAIChat } from '@/features/ai/components/NimoAIChat';
 import { CaptureSheetModal } from '@/features/home/components/CaptureSheetModal';
-import { StorybookBottomNav } from '@/features/home/components/StorybookBottomNav';
 import { StorybookTimeline } from '@/features/home/components/StorybookTimeline';
 import { TopAppBar } from '@/features/home/components/TopAppBar';
 import { WeeklyStreaks } from '@/features/home/components/WeeklyStreaks';
-import { MemoryTree } from '@/features/home/components/tree/MemoryTree';
 import { useHomeData } from '@/features/home/hooks/useHomeData';
-import { NimoAIChat } from '@/features/ai/components/NimoAIChat';
 import { ProfileScreen } from '@/features/profile/components/ProfileScreen';
 import * as Haptics from 'expo-haptics';
+import { router } from 'expo-router';
 import { ArrowRight } from 'lucide-react-native';
 import { useState } from 'react';
 import {
@@ -35,7 +34,6 @@ export default function Home() {
   } = useHomeData();
 
   const [activeTab, setActiveTab] = useState<BottomTab>('timeline');
-  const [viewMode, setViewMode] = useState<'dashboard' | 'tree'>('dashboard');
   const [captureOpen, setCaptureOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -54,9 +52,7 @@ export default function Home() {
     setActiveTab(tab);
     if (tab === 'garden') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      setViewMode('tree');
-    } else if (tab === 'timeline') {
-      setViewMode('dashboard');
+      router.push('/garden');
     }
   };
 
@@ -84,60 +80,17 @@ export default function Home() {
 
   const handleEnterGarden = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setActiveTab('garden');
-    setViewMode('tree');
-  };
-
-  const handleBackToDashboard = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setActiveTab('timeline');
-    setViewMode('dashboard');
+    router.push('/garden');
   };
 
   // Compute total moments / leaves grown
   const leavesCount = memoryTree.reduce((acc, day) => acc + (day.moments?.length || 0), 0);
-
-  // ─── Garden / Tree View ───────────────────────────
-  if (viewMode === 'tree') {
-    return (
-      <SafeAreaView className="flex-1 bg-background" edges={['top']}>
-        <MemoryTree
-          days={memoryTree}
-          isLoading={isLoading}
-          onBack={handleBackToDashboard}
-        />
-        {/* Floating Bottom Nav */}
-        <View className="absolute left-4 right-4 bottom-4 z-40">
-          <StorybookBottomNav
-            activeTab={activeTab}
-            onTabSelect={handleTabSelect}
-            onOpenCapture={() => setCaptureOpen(true)}
-          />
-        </View>
-        <CaptureSheetModal
-          visible={captureOpen}
-          onClose={() => setCaptureOpen(false)}
-          onSave={handleSaveCapture}
-          isSaving={isAddingMoment}
-        />
-      </SafeAreaView>
-    );
-  }
 
   // ─── Nimo AI Tab ──────────────────────────────────
   if (activeTab === 'nimo-ai') {
     return (
       <SafeAreaView className="flex-1 bg-[#fbf9f4] relative" edges={['top']}>
         <NimoAIChat />
-
-        {/* Floating Bottom Nav */}
-        <View className="absolute left-3.5 right-3.5 bottom-3.5 z-40">
-          <StorybookBottomNav
-            activeTab={activeTab}
-            onTabSelect={handleTabSelect}
-            onOpenCapture={() => setCaptureOpen(true)}
-          />
-        </View>
 
         <CaptureSheetModal
           visible={captureOpen}
@@ -154,15 +107,6 @@ export default function Home() {
     return (
       <SafeAreaView className="flex-1 bg-[#fbf9f4] relative" edges={['top']}>
         <ProfileScreen />
-
-        {/* Floating Bottom Nav */}
-        <View className="absolute left-3.5 right-3.5 bottom-3.5 z-40">
-          <StorybookBottomNav
-            activeTab={activeTab}
-            onTabSelect={handleTabSelect}
-            onOpenCapture={() => setCaptureOpen(true)}
-          />
-        </View>
 
         <CaptureSheetModal
           visible={captureOpen}
@@ -182,7 +126,7 @@ export default function Home() {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: 140 }}
+        contentContainerStyle={{ paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#566434" />
@@ -236,7 +180,7 @@ export default function Home() {
         <StorybookTimeline
           moments={todaysFlow}
           onOpenCalendar={handleOpenCalendar}
-          onOpenSearch={() => handleTabSelect('nimo-ai')}
+          onOpenSearch={() => router.push('/(app)/search')}
         />
       </ScrollView>
 
@@ -245,22 +189,13 @@ export default function Home() {
         <Animated.View
           entering={FadeInUp.duration(250)}
           exiting={FadeOutDown.duration(200)}
-          className="absolute left-1/2 -translate-x-1/2 bottom-24 z-50 bg-[#27170c] px-5 py-3 rounded-full shadow-lg border border-white/10"
+          className="absolute left-1/2 -translate-x-1/2 bottom-8 z-50 bg-[#27170c] px-5 py-3 rounded-full shadow-lg border border-white/10"
         >
           <Text className="font-jakarta text-[13px] font-semibold text-[#fbf9f4]">
             {toastMessage}
           </Text>
         </Animated.View>
       )}
-
-      {/* Floating Glassmorphic Bottom Navigation Bar */}
-      <View className="absolute left-3.5 right-3.5 bottom-3.5 z-40">
-        <StorybookBottomNav
-          activeTab={activeTab}
-          onTabSelect={handleTabSelect}
-          onOpenCapture={() => setCaptureOpen(true)}
-        />
-      </View>
 
       {/* Capture Sheet Modal */}
       <CaptureSheetModal

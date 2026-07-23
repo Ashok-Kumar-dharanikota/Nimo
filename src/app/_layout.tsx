@@ -50,8 +50,8 @@ export default function TabLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+      <ThemeProvider value={DefaultTheme}>
+        <StatusBar style="dark" />
         <AnimatedSplashOverlay />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="onboarding" options={{ headerShown: false, animation: 'fade' }} />

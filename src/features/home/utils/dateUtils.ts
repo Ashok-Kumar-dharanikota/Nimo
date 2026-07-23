@@ -31,12 +31,21 @@ export const formatDateForSQLite = (date: Date) => {
   return `${y}-${m}-${d}`;
 };
 
+export const parseSQLiteDate = (sqliteDateStr: string): Date => {
+  if (!sqliteDateStr) return new Date();
+  if (sqliteDateStr.endsWith('Z') || sqliteDateStr.includes('T')) {
+    return new Date(sqliteDateStr);
+  }
+  // Convert "YYYY-MM-DD HH:mm:ss" UTC string to ISO format "YYYY-MM-DDTHH:mm:ssZ"
+  return new Date(sqliteDateStr.replace(' ', 'T') + 'Z');
+};
+
 export const formatSQLiteDate = (sqliteDateStr: string) => {
-  return new Date(sqliteDateStr);
+  return parseSQLiteDate(sqliteDateStr);
 };
 
 export const formatTime = (sqliteDateStr: string) => {
-  const date = new Date(sqliteDateStr);
+  const date = parseSQLiteDate(sqliteDateStr);
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 

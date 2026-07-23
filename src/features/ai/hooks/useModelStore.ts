@@ -1,6 +1,6 @@
 import { createMMKV } from 'react-native-mmkv';
 import { useCallback, useSyncExternalStore } from 'react';
-import { models } from 'react-native-executorch';
+import { models, type LLMModel } from 'react-native-executorch';
 
 const storage = createMMKV({ id: 'nimo-ai-model-store' });
 
@@ -13,7 +13,7 @@ export type AvailableModel = {
   description: string;
   sizeLabel: string;
   quality: 'light' | 'balanced' | 'best';
-  getModelConfig: () => ReturnType<typeof models.llm.smollm2_1_135m>;
+  getModelConfig: () => LLMModel;
 };
 
 export const AVAILABLE_MODELS: AvailableModel[] = [
@@ -90,8 +90,8 @@ export function useModelStore() {
   }, []);
 
   const clearModel = useCallback(() => {
-    storage.delete(SELECTED_MODEL_KEY);
-    storage.delete(IS_ACTIVATED_KEY);
+    storage.remove(SELECTED_MODEL_KEY);
+    storage.remove(IS_ACTIVATED_KEY);
     emitChange();
   }, []);
 

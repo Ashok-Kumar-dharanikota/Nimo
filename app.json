@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/nimo/brand_logo.png",
     "scheme": "nimo",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "ios": {
       "icon": "./assets/images/nimo/brand_logo.png"
     },
@@ -34,7 +34,8 @@
           }
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true,
