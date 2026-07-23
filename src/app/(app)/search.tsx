@@ -5,9 +5,9 @@ import {
   TextInput,
   TouchableOpacity,
   Image,
-  SafeAreaView,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { FlashList } from '@shopify/flash-list';
 import { Search, X, ArrowLeft, Play, Sparkle, Smile, Sparkles, Heart, Sun, Coffee } from 'lucide-react-native';

@@ -1,4 +1,5 @@
 import { Feather, MaterialIcons } from '@expo/vector-icons';
+import { FlashList } from '@shopify/flash-list';
 import * as Haptics from 'expo-haptics';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -30,11 +31,6 @@ interface MemoryTreeProps {
   onBack?: () => void;
   onSelectEmptyDay?: (day: DayData) => void;
 }
-
-const pseudoRandom = (seed: number) => {
-  const x = Math.sin(seed) * 10000;
-  return x - Math.floor(x);
-};
 
 const getSeasonTheme = (monthIndex: number) => {
   // Spring: 2, 3, 4 (Mar-May)
@@ -204,6 +200,19 @@ export function MemoryTree({ days, isLoading, onBack, onSelectEmptyDay }: Memory
                   : new Date(now.getFullYear(), idx, 1);
                 const firstDayOfWeek = firstDayDate.getDay();
 
+                const gridItems = [
+                  ...Array.from({ length: firstDayOfWeek }).map((_, padIdx) => ({
+                    isPadding: true as const,
+                    id: `pad-${idx}-${padIdx}`,
+                  })),
+                  ...monthDays.map((dayData, i) => ({
+                    isPadding: false as const,
+                    id: dayData.dateStr,
+                    dayData,
+                    indexInMonth: i,
+                  })),
+                ];
+
                 return (
                   <View
                     key={`month-${idx}`}
@@ -238,69 +247,69 @@ export function MemoryTree({ days, isLoading, onBack, onSelectEmptyDay }: Memory
                       ))}
                     </View>
 
-                    {/* Calendar Grid with Offset Padding */}
-                    <View style={styles.grid}>
-                      {/* Leading Empty Spacer Cells for Day-of-Week Alignment */}
-                      {Array.from({ length: firstDayOfWeek }).map((_, padIdx) => (
-                        <View key={`pad-${idx}-${padIdx}`} style={styles.gridCell} />
-                      ))}
+                    {/* Calendar Grid with FlashList */}
+                    <View style={styles.gridContainer}>
+                      <FlashList
+                        data={gridItems}
+                        numColumns={7}
+                        scrollEnabled={false}
+                        keyExtractor={(item) => item.id}
+                        ItemSeparatorComponent={() => <View style={styles.rowSeparator} />}
+                        renderItem={({ item }) => {
+                          if (item.isPadding) {
+                            return <View style={styles.gridCell} />;
+                          }
 
-                      {/* Actual Days */}
-                      {monthDays.map((dayData, i) => {
-                        const hasMoments = dayData.moments.length > 0;
-                        const isToday = dayData.isToday;
+                          const { dayData, indexInMonth: i } = item;
+                          const hasMoments = dayData.moments.length > 0;
+                          const isToday = dayData.isToday;
 
-                        // Seeded random jitter for organic terrain
-                        const seed = idx * 100 + i;
-                        const jitterX = (pseudoRandom(seed) - 0.5) * 6;
-                        const jitterY = (pseudoRandom(seed + 1) - 0.5) * 6;
+                          const dateFormatted = `${monthNames[idx]} ${i + 1}`;
+                          const accessibilityText = `${dateFormatted}, ${hasMoments
+                            ? `${dayData.moments.length} memory logged`
+                            : 'No memories'
+                            }${isToday ? ' (Today)' : ''}`;
 
-                        const dateFormatted = `${monthNames[idx]} ${i + 1}`;
-                        const accessibilityText = `${dateFormatted}, ${hasMoments
-                          ? `${dayData.moments.length} memory logged`
-                          : 'No memories'
-                          }${isToday ? ' (Today)' : ''}`;
+                          const CellContent = (
+                            <TouchableOpacity
+                              activeOpacity={0.7}
+                              onPress={() => handleDayPress(dayData)}
+                              style={[
+                                styles.touchableCell,
+                                isToday && styles.todayCellContainer,
+                              ]}
+                              accessible={true}
+                              accessibilityLabel={accessibilityText}
+                              accessibilityHint={
+                                hasMoments
+                                  ? 'Tap to view memory'
+                                  : isToday
+                                    ? 'Tap to add today memory'
+                                    : undefined
+                              }
+                              accessibilityRole="button"
+                            >
+                              {hasMoments ? (
+                                <StaticSprout opacity={1} />
+                              ) : isToday ? (
+                                <StaticSprout opacity={0.6} />
+                              ) : (
+                                <View style={[styles.emptyDotCircle, { backgroundColor: season.dot }]} />
+                              )}
+                            </TouchableOpacity>
+                          );
 
-                        const CellContent = (
-                          <TouchableOpacity
-                            activeOpacity={0.7}
-                            onPress={() => handleDayPress(dayData)}
-                            style={[
-                              styles.touchableCell,
-                              isToday && styles.todayCellContainer,
-                              { transform: [{ translateX: jitterX }, { translateY: jitterY }] },
-                            ]}
-                            accessible={true}
-                            accessibilityLabel={accessibilityText}
-                            accessibilityHint={
-                              hasMoments
-                                ? 'Tap to view memory'
-                                : isToday
-                                  ? 'Tap to add today memory'
-                                  : undefined
-                            }
-                            accessibilityRole="button"
-                          >
-                            {hasMoments ? (
-                              <StaticSprout opacity={1} />
-                            ) : isToday ? (
-                              <StaticSprout opacity={0.6} />
-                            ) : (
-                              <Text style={[styles.emptyDot, { color: season.dot }]}>·</Text>
-                            )}
-                          </TouchableOpacity>
-                        );
-
-                        return (
-                          <View key={`day-wrap-${dayData.dateStr}`} style={styles.gridCell}>
-                            {isToday ? (
-                              <TodayPulseRing>{CellContent}</TodayPulseRing>
-                            ) : (
-                              CellContent
-                            )}
-                          </View>
-                        );
-                      })}
+                          return (
+                            <View style={styles.gridCell}>
+                              {isToday ? (
+                                <TodayPulseRing>{CellContent}</TodayPulseRing>
+                              ) : (
+                                CellContent
+                              )}
+                            </View>
+                          );
+                        }}
+                      />
                     </View>
                   </View>
                 );
@@ -428,6 +437,9 @@ const styles = StyleSheet.create({
     color: '#a39485',
     fontFamily: 'Plus Jakarta Sans',
   },
+  gridContainer: {
+    paddingHorizontal: 12,
+  },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -440,6 +452,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+    marginVertical: 5,
+  },
+  rowSeparator: {
+    height: 12,
   },
   touchableCell: {
     width: '100%',
@@ -463,6 +479,12 @@ const styles = StyleSheet.create({
     borderColor: '#7CB342',
     backgroundColor: 'rgba(124, 179, 66, 0.15)',
   },
+  emptyDotCircle: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    opacity: 0.65,
+  },
   todayCellContainer: {
     borderRadius: 18,
   },
@@ -470,10 +492,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
   },
-  emptyDot: {
-    fontSize: 26,
-    fontWeight: '700',
-  },
+
   bottomPad: { height: 100 },
   fabContainer: {
     position: 'absolute',
