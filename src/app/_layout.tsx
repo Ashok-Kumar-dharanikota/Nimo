@@ -55,6 +55,7 @@ export default function TabLayout() {
         <AnimatedSplashOverlay />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="onboarding" options={{ headerShown: false, animation: 'fade' }} />
+          <Stack.Screen name="auth" options={{ headerShown: false, animation: 'slide_from_right' }} />
           <Stack.Screen name="(app)" options={{ headerShown: false }} />
           <Stack.Screen name="compose" options={{ presentation: 'modal', headerShown: false, animation: 'slide_from_bottom' }} />
         </Stack>

@@ -1,7 +1,12 @@
-import { Tabs } from 'expo-router';
-import { House, Search, Sparkles, User } from 'lucide-react-native';
+import { Tabs, useRouter } from 'expo-router';
+import { House, Search, Sparkles, User, Plus } from 'lucide-react-native';
+import { View, TouchableOpacity } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { draftStore } from '@/store/draftStore';
 
 export default function AppLayout() {
+  const router = useRouter();
+
   return (
     <Tabs
       screenOptions={{
@@ -11,10 +16,14 @@ export default function AppLayout() {
         tabBarStyle: {
           backgroundColor: '#fbf9f4',
           borderTopColor: '#eef1e4',
+          height: 64,
+          paddingBottom: 8,
+          paddingTop: 8,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: '600',
+          fontFamily: 'Plus Jakarta Sans',
         },
       }}
     >
@@ -31,6 +40,50 @@ export default function AppLayout() {
         options={{
           title: 'Search',
           tabBarIcon: ({ color, size }) => <Search size={size} color={color} />,
+        }}
+      />
+
+      {/* Floating Moment Creation Button */}
+      <Tabs.Screen
+        name="add"
+        options={{
+          title: '',
+          tabBarButton: () => (
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                draftStore.startDraft();
+                router.push({ pathname: '/(app)/home', params: { create: 'true' } });
+              }}
+              style={{
+                top: -18,
+                justifyContent: 'center',
+                alignItems: 'center',
+                paddingHorizontal: 12,
+              }}
+            >
+              <View
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: 28,
+                  backgroundColor: '#566434',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  shadowColor: '#566434',
+                  shadowOffset: { width: 0, height: 6 },
+                  shadowOpacity: 0.35,
+                  shadowRadius: 10,
+                  elevation: 8,
+                  borderWidth: 3,
+                  borderColor: '#fbf9f4',
+                }}
+              >
+                <Plus size={26} color="#ffffff" />
+              </View>
+            </TouchableOpacity>
+          ),
         }}
       />
 
@@ -52,13 +105,6 @@ export default function AppLayout() {
 
       <Tabs.Screen
         name="home"
-        options={{
-          href: null,
-        }}
-      />
-
-      <Tabs.Screen
-        name="add"
         options={{
           href: null,
         }}

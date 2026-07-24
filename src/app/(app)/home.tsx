@@ -1,14 +1,15 @@
 import { NimoAIChat } from '@/features/ai/components/NimoAIChat';
-import { CaptureSheetModal } from '@/features/home/components/CaptureSheetModal';
 import { StorybookTimeline } from '@/features/home/components/StorybookTimeline';
 import { TopAppBar } from '@/features/home/components/TopAppBar';
 import { WeeklyStreaks } from '@/features/home/components/WeeklyStreaks';
 import { useHomeData } from '@/features/home/hooks/useHomeData';
 import { ProfileScreen } from '@/features/profile/components/ProfileScreen';
+import { ensureStarterMomentsIfNewUser } from '@/features/home/services/seedMomentsService';
+import { draftStore } from '@/store/draftStore';
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowRight } from 'lucide-react-native';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Image,
   RefreshControl,
@@ -23,6 +24,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 export type BottomTab = 'timeline' | 'garden' | 'nimo-ai' | 'profile';
 
 export default function Home() {
+  const params = useLocalSearchParams<{ create?: string; action?: string }>();
   const {
     weeklyStreaks,
     todaysFlow,
@@ -34,9 +36,20 @@ export default function Home() {
   } = useHomeData();
 
   const [activeTab, setActiveTab] = useState<BottomTab>('timeline');
-  const [captureOpen, setCaptureOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    ensureStarterMomentsIfNewUser().then(() => {
+      refetch();
+    });
+  }, []);
+
+  useEffect(() => {
+    if (params.create === 'true' || params.action === 'create') {
+      draftStore.startDraft();
+    }
+  }, [params.create, params.action]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -91,13 +104,6 @@ export default function Home() {
     return (
       <SafeAreaView className="flex-1 bg-[#fbf9f4] relative" edges={['top']}>
         <NimoAIChat />
-
-        <CaptureSheetModal
-          visible={captureOpen}
-          onClose={() => setCaptureOpen(false)}
-          onSave={handleSaveCapture}
-          isSaving={isAddingMoment}
-        />
       </SafeAreaView>
     );
   }
@@ -107,13 +113,6 @@ export default function Home() {
     return (
       <SafeAreaView className="flex-1 bg-[#fbf9f4] relative" edges={['top']}>
         <ProfileScreen />
-
-        <CaptureSheetModal
-          visible={captureOpen}
-          onClose={() => setCaptureOpen(false)}
-          onSave={handleSaveCapture}
-          isSaving={isAddingMoment}
-        />
       </SafeAreaView>
     );
   }
@@ -196,14 +195,6 @@ export default function Home() {
           </Text>
         </Animated.View>
       )}
-
-      {/* Capture Sheet Modal */}
-      <CaptureSheetModal
-        visible={captureOpen}
-        onClose={() => setCaptureOpen(false)}
-        onSave={handleSaveCapture}
-        isSaving={isAddingMoment}
-      />
     </SafeAreaView>
   );
 }

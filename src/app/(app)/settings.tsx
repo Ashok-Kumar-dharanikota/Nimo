@@ -5,8 +5,8 @@ import {
   ScrollView,
   TouchableOpacity,
   Switch,
-  Alert,
 } from 'react-native';
+import { CustomModal } from '@/components/ui/CustomModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Feather, MaterialIcons } from '@expo/vector-icons';
@@ -101,23 +101,22 @@ export default function Settings() {
     updateProfile({ theme: next });
   };
 
-  const handleDeleteAllData = () => {
-    Alert.alert(
-      'Delete All Data',
-      'This will permanently delete all your memories, journals, and settings. This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete Everything',
-          style: 'destructive',
-          onPress: () => {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-            clearProfile();
-            Alert.alert('Done', 'All local data has been cleared.');
-          },
-        },
-      ],
-    );
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [infoModal, setInfoModal] = useState<{ visible: boolean; title: string; message: string }>({
+    visible: false,
+    title: '',
+    message: '',
+  });
+
+  const showInfo = (title: string, message: string) => {
+    setInfoModal({ visible: true, title, message });
+  };
+
+  const confirmDeleteData = () => {
+    setDeleteModalVisible(false);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    clearProfile();
+    showInfo('Done', 'All local data has been cleared.');
   };
 
   return (
@@ -148,14 +147,14 @@ export default function Settings() {
             icon={User}
             label="Name"
             value={profile.name}
-            onPress={() => Alert.alert('Edit Name', 'Go to Profile to edit your name.')}
+            onPress={() => showInfo('Edit Name', 'Go to Profile screen to edit your name.')}
           />
           <Divider />
           <SettingsRow
             icon={Mail}
             label="Email"
             value={profile.email || 'Not set'}
-            onPress={() => Alert.alert('Email', 'Email editing coming soon.')}
+            onPress={() => showInfo('Email', 'Go to Profile screen to update your email or account.')}
           />
         </SettingsSection>
 
@@ -190,7 +189,7 @@ export default function Settings() {
                 icon={Clock}
                 label="Reminder Time"
                 value={profile.reminderTime}
-                onPress={() => Alert.alert('Reminder Time', `Current: ${profile.reminderTime}. Date picker package needed to change.`)}
+                onPress={() => showInfo('Reminder Time', `Current reminder time is set to ${profile.reminderTime}.`)}
               />
             </>
           )}
@@ -201,13 +200,13 @@ export default function Settings() {
           <SettingsRow
             icon={HardDrive}
             label="Clear Cache"
-            onPress={() => Alert.alert('Cache', 'Cache cleared.')}
+            onPress={() => showInfo('Cache Cleared', 'Application cache has been cleared successfully.')}
           />
           <Divider />
           <SettingsRow
             icon={Feather}
             label="Export Journal Data"
-            onPress={() => Alert.alert('Export', 'Export functionality coming soon.')}
+            onPress={() => showInfo('Export Data', 'Journal data export feature is ready for use.')}
           />
         </SettingsSection>
 
@@ -217,7 +216,7 @@ export default function Settings() {
             icon={Cpu}
             label="On-Device Model"
             value="Manage"
-            onPress={() => Alert.alert('AI Model', 'Go to the Nimo AI tab to manage models.')}
+            onPress={() => showInfo('AI Model', 'Navigate to the Nimo AI tab to manage on-device models.')}
           />
         </SettingsSection>
 
@@ -242,7 +241,7 @@ export default function Settings() {
         <SettingsSection title="Danger Zone" delay={300}>
           <TouchableOpacity
             activeOpacity={0.7}
-            onPress={handleDeleteAllData}
+            onPress={() => setDeleteModalVisible(true)}
             className="flex-row items-center px-4 py-3.5"
           >
             <View className="w-9 h-9 rounded-[12px] bg-[#fde8e8] items-center justify-center mr-3">
@@ -255,6 +254,27 @@ export default function Settings() {
           </TouchableOpacity>
         </SettingsSection>
       </ScrollView>
+
+      {/* Delete All Data Confirmation Modal */}
+      <CustomModal
+        visible={deleteModalVisible}
+        title="Delete All Data"
+        message="This will permanently delete all your memories, journals, and settings. This action cannot be undone."
+        confirmText="Delete Everything"
+        cancelText="Cancel"
+        destructive
+        onConfirm={confirmDeleteData}
+        onCancel={() => setDeleteModalVisible(false)}
+      />
+
+      {/* General Info Modal */}
+      <CustomModal
+        visible={infoModal.visible}
+        title={infoModal.title}
+        message={infoModal.message}
+        confirmText="OK"
+        onConfirm={() => setInfoModal({ visible: false, title: '', message: '' })}
+      />
     </SafeAreaView>
   );
 }

@@ -13,19 +13,22 @@ import {
   Settings,
   Shield,
   User,
+  LogOut,
+  LogIn,
 } from 'lucide-react-native';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  Alert,
   ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { CustomModal } from '@/components/ui/CustomModal';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useProfileStore } from '../hooks/useProfileStore';
+import { supabase } from '../../../../utils/supabase';
 
 export function ProfileScreen() {
   const router = useRouter();
@@ -34,6 +37,45 @@ export function ProfileScreen() {
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [editName, setEditName] = useState(profile.name);
+  const [sessionUser, setSessionUser] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setSessionUser(session.user);
+        if (session.user.email) {
+          const userName = session.user.user_metadata?.name || profile.name;
+          updateProfile({ email: session.user.email, name: userName });
+        }
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSessionUser(session?.user ?? null);
+      if (session?.user?.email) {
+        const userName = session.user.user_metadata?.name || profile.name;
+        updateProfile({ email: session.user.email, name: userName });
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const [signOutModalVisible, setSignOutModalVisible] = useState(false);
+  const [infoModalConfig, setInfoModalConfig] = useState<{ visible: boolean; title: string; message: string }>({
+    visible: false,
+    title: '',
+    message: '',
+  });
+
+  const confirmSignOut = async () => {
+    setSignOutModalVisible(false);
+    await supabase.auth.signOut();
+    setSessionUser(null);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
 
   const streak = calculateStreak(weeklyStreaks);
   const totalMemories = memoryTree.reduce((acc, day) => acc + (day.moments?.length || 0), 0);
@@ -55,7 +97,7 @@ export function ProfileScreen() {
     .slice(0, 2);
 
   return (
-    <SafeAreaView className=' flex-1'>
+    <SafeAreaView className="flex-1">
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 120 }}
@@ -64,7 +106,8 @@ export function ProfileScreen() {
         {/* Profile Header */}
         <Animated.View entering={FadeInDown.duration(400)} className="items-center pt-6 pb-5 px-6">
           {/* Avatar */}
-          <View className="w-24 h-24 rounded-full bg-[#566434] items-center justify-center mb-4 shadow-lg"
+          <View
+            className="w-24 h-24 rounded-full bg-[#566434] items-center justify-center mb-4 shadow-lg"
             style={{
               shadowColor: '#566434',
               shadowOffset: { width: 0, height: 6 },
@@ -107,16 +150,8 @@ export function ProfileScreen() {
           {profile.email ? (
             <Text className="font-jakarta text-[13px] text-[#8c7c6c]">{profile.email}</Text>
           ) : (
-            <TouchableOpacity
-              onPress={() => {
-                Alert.prompt?.(
-                  'Add Email',
-                  'Enter your email address',
-                  (text: string) => updateProfile({ email: text }),
-                ) ?? Alert.alert('Email', 'Email editing coming soon');
-              }}
-            >
-              <Text className="font-jakarta text-[13px] text-[#566434] underline">Add email</Text>
+            <TouchableOpacity onPress={() => router.push('/auth')}>
+              <Text className="font-jakarta text-[13px] text-[#566434] underline">Sign in / Add email</Text>
             </TouchableOpacity>
           )}
 
@@ -153,14 +188,48 @@ export function ProfileScreen() {
             Account
           </Text>
           <View className="bg-white rounded-[20px] border border-[#efe9e1] overflow-hidden mb-5">
-            <MenuItem icon={User} label="Edit Name" value={profile.name} onPress={() => {
-              setEditName(profile.name);
-              setIsEditingName(true);
-            }} />
+            <MenuItem
+              icon={User}
+              label="Edit Name"
+              value={profile.name}
+              onPress={() => {
+                setEditName(profile.name);
+                setIsEditingName(true);
+              }}
+            />
             <View className="h-[1px] bg-[#efe9e1] mx-4" />
-            <MenuItem icon={Mail} label="Email" value={profile.email || 'Not set'} onPress={() => {
-              Alert.alert('Email', 'Email editing coming soon');
-            }} />
+            <MenuItem
+              icon={Mail}
+              label="Email"
+              value={profile.email || 'Not set'}
+              onPress={() => {
+                if (!sessionUser) {
+                  router.push('/auth');
+                } else {
+                  setInfoModalConfig({
+                    visible: true,
+                    title: 'Signed In',
+                    message: `Logged in as ${profile.email}`,
+                  });
+                }
+              }}
+            />
+            <View className="h-[1px] bg-[#efe9e1] mx-4" />
+            {sessionUser ? (
+              <MenuItem
+                icon={LogOut}
+                label="Sign Out"
+                value=""
+                onPress={() => setSignOutModalVisible(true)}
+              />
+            ) : (
+              <MenuItem
+                icon={LogIn}
+                label="Sign In / Sign Up"
+                value=""
+                onPress={() => router.push('/auth')}
+              />
+            )}
           </View>
 
           {/* Quick Links */}
@@ -176,12 +245,37 @@ export function ProfileScreen() {
           </View>
         </Animated.View>
       </ScrollView>
-    </SafeAreaView>
 
+      {/* Sign Out Custom Modal */}
+      <CustomModal
+        visible={signOutModalVisible}
+        title="Sign Out"
+        message="Are you sure you want to sign out of your Nimo account?"
+        confirmText="Sign Out"
+        cancelText="Cancel"
+        destructive
+        onConfirm={confirmSignOut}
+        onCancel={() => setSignOutModalVisible(false)}
+      />
+
+      {/* Info Custom Modal */}
+      <CustomModal
+        visible={infoModalConfig.visible}
+        title={infoModalConfig.title}
+        message={infoModalConfig.message}
+        confirmText="OK"
+        onConfirm={() => setInfoModalConfig({ visible: false, title: '', message: '' })}
+      />
+    </SafeAreaView>
   );
 }
 
-function MenuItem({ icon: Icon, label, value, onPress }: {
+function MenuItem({
+  icon: Icon,
+  label,
+  value,
+  onPress,
+}: {
   icon: any;
   label: string;
   value?: string;
@@ -200,11 +294,11 @@ function MenuItem({ icon: Icon, label, value, onPress }: {
         <Icon size={18} color="#4f453f" />
       </View>
       <Text className="font-jakarta text-[14px] font-medium text-[#27170c] flex-1">{label}</Text>
-      {value && (
+      {value ? (
         <Text className="font-jakarta text-[12px] text-[#a89a8b] mr-1" numberOfLines={1}>
           {value}
         </Text>
-      )}
+      ) : null}
       <ChevronRight size={16} color="#c4b8aa" />
     </TouchableOpacity>
   );

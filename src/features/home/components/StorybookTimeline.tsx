@@ -5,6 +5,7 @@ import { Calendar, Search, Play, Smile, Sparkles, Heart, Sun, Coffee, Sparkle } 
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { formatTime } from '../utils/dateUtils';
+import { InlineDraftCard } from './InlineDraftCard';
 import { MomentVideoPlayer } from './MomentVideoPlayer';
 
 interface MomentData {
@@ -146,6 +147,9 @@ export function StorybookTimeline({
 
       {/* Threaded Storybook Feed Container */}
       <View className="relative px-6">
+        {/* Inline Draft Moment Card */}
+        <InlineDraftCard />
+
         {/* Thread Vertical Connector Line — adjusted for 28px dot */}
         <View className="absolute left-[37px] top-4 bottom-8 w-[2px] bg-[#c7d2ab]" />
 

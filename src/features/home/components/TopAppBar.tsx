@@ -1,21 +1,27 @@
 import { Feather, MaterialIcons } from "@expo/vector-icons";
 import { Text, TouchableOpacity, View } from "react-native";
+import { useRouter } from "expo-router";
 import { calculateStreak } from "../utils/dateUtils";
+import { useProfileStore } from "@/features/profile/hooks/useProfileStore";
 
 interface TopAppBarProps {
   moments?: Array<{ createdAt: string }>;
 }
 
 export function TopAppBar({ moments = [] }: TopAppBarProps) {
+  const router = useRouter();
+  const { profile } = useProfileStore();
   const streak = calculateStreak(moments);
   const hour = new Date().getHours();
-  
+
   let greeting = "Good Evening";
   if (hour < 12) {
     greeting = "Good Morning";
   } else if (hour < 17) {
     greeting = "Good Afternoon";
   }
+
+  const firstName = profile.name ? profile.name.trim().split(" ")[0] : "there";
 
   return (
     <View className="flex-row items-center justify-between px-5 pt-4 pb-3">
@@ -24,7 +30,7 @@ export function TopAppBar({ moments = [] }: TopAppBarProps) {
           Welcome back
         </Text>
         <Text className="font-jakarta text-[20px] font-bold text-primary -mt-0.5">
-          {greeting}, Sarah
+          {greeting}, {firstName}
         </Text>
       </View>
 
@@ -43,6 +49,7 @@ export function TopAppBar({ moments = [] }: TopAppBarProps) {
 
         <TouchableOpacity
           activeOpacity={0.7}
+          onPress={() => router.push("/profile")}
           className="h-10 w-10 items-center justify-center rounded-full border border-outlineVariant bg-surfaceContainerLowest shadow-sm"
         >
           <Feather

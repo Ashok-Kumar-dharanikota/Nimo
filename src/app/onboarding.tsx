@@ -103,6 +103,14 @@ export default function Onboarding() {
     router.replace('/(app)/home');
   }, [router]);
 
+  const handleContinueWithEmail = useCallback(() => {
+    router.push({ pathname: '/auth', params: { mode: 'signUp' } });
+  }, [router]);
+
+  const handleLogin = useCallback(() => {
+    router.push({ pathname: '/auth', params: { mode: 'signIn' } });
+  }, [router]);
+
   const isLastSlide = currentIndex === TOTAL_SLIDES - 1;
   const isFirstSlide = currentIndex === 0;
 
@@ -146,9 +154,9 @@ export default function Onboarding() {
         {/* Slide 4: Get Started */}
         <OnboardingGetStarted
           isActive={currentIndex === TOTAL_SLIDES - 1}
-          onContinueWithEmail={completeOnboarding}
+          onContinueWithEmail={handleContinueWithEmail}
           onContinueWithGoogle={completeOnboarding}
-          onLogin={completeOnboarding}
+          onLogin={handleLogin}
         />
       </ScrollView>
 
