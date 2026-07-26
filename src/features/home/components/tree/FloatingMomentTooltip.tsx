@@ -1,8 +1,7 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, Image } from 'react-native';
-import Animated, { SlideInDown, SlideOutDown } from 'react-native-reanimated';
-import { X, ArrowRight, Film } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+import { ArrowRight, Film, X } from 'lucide-react-native';
+import { Image, Text, TouchableOpacity, View } from 'react-native';
+import Animated, { SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import type { MomentItem } from '../../services/homeService';
 import { formatTime } from '../../utils/dateUtils';
 

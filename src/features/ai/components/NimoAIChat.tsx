@@ -34,12 +34,19 @@ import {
   Loader,
   AlertCircle,
   X,
+  Shield,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useLLM, models } from 'react-native-executorch';
 import { useModelStore, AVAILABLE_MODELS, type AvailableModel } from '../hooks/useModelStore';
 import { ragService } from '@/lib/ragService';
 import { setupExecutorch } from '@/lib/executorch';
+import { storage } from '@/lib/storage';
+import { useSubscription } from '@/components/SubscriptionProvider';
+import { useRouter } from 'expo-router';
+import * as Device from 'expo-device';
+import { useProfileStore } from '@/features/profile/hooks/useProfileStore';
+import { useTaskData } from '@/features/home/hooks/useTaskData';
 
 // ─── Quality badge config ────────────────────────────────────────
 const QUALITY_BADGE: Record<string, { label: string; color: string; bg: string }> = {
@@ -191,14 +198,18 @@ function ModelCard({ model, isSelected, onSelect }: {
   onSelect: () => void;
 }) {
   const badge = QUALITY_BADGE[model.quality];
+  const deviceMemoryMB = Device.totalMemory ? Device.totalMemory / (1024 * 1024) : 0;
+  const isSupported = deviceMemoryMB === 0 || deviceMemoryMB >= model.minMemoryMB;
 
   return (
     <TouchableOpacity
-      activeOpacity={0.85}
+      activeOpacity={isSupported ? 0.85 : 1}
       onPress={() => {
+        if (!isSupported) return;
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         onSelect();
       }}
+      style={{ opacity: isSupported ? 1 : 0.6 }}
       className={`rounded-[24px] p-5 border-2 mb-3 ${
         isSelected
           ? 'border-[#566434] bg-[#eef1e4]/60'
@@ -206,26 +217,33 @@ function ModelCard({ model, isSelected, onSelect }: {
       }`}
     >
       <View className="flex-row items-start justify-between mb-2">
-        <View className="flex-1">
+        <View className="flex-1 pr-4">
           <Text className="font-playfair text-[18px] font-bold text-[#27170c]">
-            {model.name}
+            {model.characterName}
           </Text>
-          <View className="flex-row items-center gap-2 mt-1">
-            <View
-              className="flex-row items-center gap-1 px-2.5 py-0.5 rounded-full"
-              style={{ backgroundColor: badge.bg }}
-            >
-              <Text
-                className="font-jakarta text-[10px] font-bold"
-                style={{ color: badge.color }}
-              >
-                {badge.label}
+          {!isSupported && (
+            <View className="flex-row items-center gap-1 mt-1">
+              <AlertCircle size={12} color="#dc2626" />
+              <Text className="font-jakarta text-[11px] font-semibold text-[#dc2626]">
+                Requires {Math.round(model.minMemoryMB / 1024)}GB RAM (Device has {Math.round(deviceMemoryMB / 1024)}GB)
               </Text>
             </View>
-            <Text className="font-jakarta text-[11px] font-semibold text-[#a89a8b]">
-              {model.sizeLabel}
-            </Text>
-          </View>
+          )}
+          {isSupported && (
+            <View className="flex-row items-center gap-2 mt-1">
+              <View
+                className="flex-row items-center gap-1 px-2.5 py-0.5 rounded-full"
+                style={{ backgroundColor: badge.bg }}
+              >
+                <Text
+                  className="font-jakarta text-[10px] font-bold"
+                  style={{ color: badge.color }}
+                >
+                  {badge.label}
+                </Text>
+              </View>
+            </View>
+          )}
         </View>
 
         <View className={`w-6 h-6 rounded-full border-2 items-center justify-center ${
@@ -262,24 +280,24 @@ function ModelDownloadCatalog({ onStartDownload }: { onStartDownload: (modelId: 
             shadowRadius: 12,
           }}
         >
-          <Cpu size={36} color="#ffffff" />
+          <Bot size={36} color="#ffffff" />
         </View>
 
         <Text className="font-playfair text-[28px] font-bold text-[#27170c] text-center leading-tight">
-          Nimo AI
+          Nimo Companions
         </Text>
         <Text className="font-jakarta text-[14px] text-[#8c7c6c] text-center mt-2 leading-relaxed px-4">
-          Your private, on-device journaling companion.{'\n'}
-          Choose a model to get started.
+          Your personal, empathetic journaling friend.{'\n'}
+          Choose a companion to get started.
         </Text>
       </Animated.View>
 
       {/* Feature Pills */}
       <Animated.View entering={FadeInDown.delay(100)} className="flex-row justify-center gap-2 mb-6">
         {[
-          { icon: Zap, label: 'On-Device' },
-          { icon: Star, label: 'Private' },
-          { icon: Sparkles, label: 'No Internet' },
+          { icon: Star, label: 'Empathetic' },
+          { icon: Shield, label: 'Private' },
+          { icon: Sparkles, label: 'Always There' },
         ].map(({ icon: Icon, label }) => (
           <View key={label} className="flex-row items-center gap-1.5 bg-[#f0eee9] px-3 py-1.5 rounded-full border border-[#e4e2dd]">
             <Icon size={12} color="#566434" />
@@ -291,7 +309,7 @@ function ModelDownloadCatalog({ onStartDownload }: { onStartDownload: (modelId: 
       {/* Model Cards */}
       <Animated.View entering={FadeInDown.delay(200)}>
         <Text className="font-jakarta text-[12px] font-bold tracking-wider text-[#a89a8b] uppercase mb-3 px-1">
-          Available Models
+          Choose Your Companion
         </Text>
 
         {AVAILABLE_MODELS.map((model) => (
@@ -317,12 +335,12 @@ function ModelDownloadCatalog({ onStartDownload }: { onStartDownload: (modelId: 
           >
             <Download size={18} color="#fbf9f4" />
             <Text className="font-jakarta text-[15px] font-bold text-[#fbf9f4]">
-              Download & Activate
+              Invite to your journal
             </Text>
           </TouchableOpacity>
 
           <Text className="font-jakarta text-[11px] text-[#a89a8b] text-center mt-2">
-            Model will be downloaded and stored locally on your device.
+            Your companion will live securely and privately on your device.
           </Text>
         </Animated.View>
       )}
@@ -330,10 +348,10 @@ function ModelDownloadCatalog({ onStartDownload }: { onStartDownload: (modelId: 
       {/* Info Note */}
       <Animated.View entering={FadeInDown.delay(400)} className="mt-6 bg-[#f7ede2] rounded-[20px] p-4 border border-[#f0e0cc]">
         <Text className="font-jakarta text-[12px] font-semibold text-[#b5651d] mb-1">
-          💡 How it works
+          💡 Complete Privacy
         </Text>
         <Text className="font-jakarta text-[12px] text-[#8a6d4a] leading-relaxed">
-          Nimo AI runs entirely on your device. Your journal entries and conversations never leave your phone — complete privacy guaranteed.
+          Nimo Companions are completely local. Your journal entries and conversations never leave your phone — complete privacy guaranteed.
         </Text>
       </Animated.View>
     </ScrollView>
@@ -383,9 +401,13 @@ function ChatInterface({
   selectedModel: AvailableModel;
   onBack: () => void;
 }) {
+  const router = useRouter();
   const [inputText, setInputText] = useState('');
   const scrollViewRef = useRef<ScrollView>(null);
   const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
+  const { isPremium } = useSubscription();
+  const { profile } = useProfileStore();
+  const { todayTask } = useTaskData();
 
   const modelConfig = selectedModel.getModelConfig();
 
@@ -393,17 +415,48 @@ function ChatInterface({
     model: modelConfig,
   });
 
+  // Track daily AI message usage
+  const [dailyAiUsage, setDailyAiUsage] = useState(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const savedDate = storage.getString('ai_usage_date');
+    if (savedDate !== today) {
+      storage.set('ai_usage_date', today);
+      storage.set('ai_usage_count', 0);
+      return 0;
+    }
+    return storage.getNumber('ai_usage_count') || 0;
+  });
+
+  const incrementAiUsage = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const savedDate = storage.getString('ai_usage_date');
+    let count = dailyAiUsage;
+    if (savedDate !== today) {
+      storage.set('ai_usage_date', today);
+      count = 0;
+    }
+    count += 1;
+    storage.set('ai_usage_count', count);
+    setDailyAiUsage(count);
+  };
+
+  const hasReachedLimit = false; // !isPremium && dailyAiUsage >= 3;
+
   // Configure system prompt once ready
   useEffect(() => {
     if (llm.isReady) {
+      const userName = profile.name ? profile.name.split(' ')[0] : 'friend';
       llm.configure({
         chatConfig: {
-          systemPrompt:
-            'You are Nimo, a warm and thoughtful journaling companion. You help users reflect on their thoughts, emotions, and daily experiences. Be empathetic, concise, and encouraging. Keep responses under 3 paragraphs.',
+          systemPrompt: `You are ${selectedModel.characterName.split(' - ')[0]}, a warm and thoughtful journaling companion. 
+The user you are speaking to is named ${userName}. 
+Here is your life story: ${selectedModel.lifeStory}
+If the user asks about you, feel free to share pieces of your life story in a conversational manner.
+Always be empathetic, concise, and encouraging. Keep responses under 3 paragraphs.`,
         },
       });
     }
-  }, [llm.isReady]);
+  }, [llm.isReady, profile.name, selectedModel]);
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -412,13 +465,19 @@ function ChatInterface({
     }
   }, [llm.messageHistory, llm.response, llm.isGenerating]);
 
-  const sendMessage = useCallback(async () => {
-    const text = inputText.trim();
+  const sendMessage = useCallback(async (forcedText?: string) => {
+    const text = (forcedText || inputText).trim();
     if (!text || llm.isGenerating || !llm.isReady) return;
+
+    if (hasReachedLimit) {
+      router.push('/paywall');
+      return;
+    }
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setInputText('');
     setHasUserSentMessage(true);
+    incrementAiUsage();
 
     try {
       // Perform semantic query against RAG vector store
@@ -442,7 +501,7 @@ function ChatInterface({
     } catch (e) {
       console.warn('LLM sendMessage error:', e);
     }
-  }, [inputText, llm]);
+  }, [inputText, llm, hasReachedLimit]);
 
   // Compute status
   const status: 'downloading' | 'loading' | 'ready' | 'error' = llm.error
@@ -457,7 +516,7 @@ function ChatInterface({
   if (llm.error) {
     return (
       <View className="flex-1">
-        <ChatHeader modelName={selectedModel.name} onBack={onBack} status="error" />
+        <ChatHeader modelName={selectedModel.characterName} onBack={onBack} status="error" />
         <View className="flex-1 justify-center">
           <ErrorState
             error={llm.error.message ?? 'Unknown error occurred'}
@@ -476,7 +535,7 @@ function ChatInterface({
       keyboardVerticalOffset={0}
     >
       <ChatHeader
-        modelName={selectedModel.name}
+        modelName={selectedModel.characterName}
         onBack={onBack}
         status={status}
         progress={llm.downloadProgress}
@@ -496,11 +555,11 @@ function ChatInterface({
             <View className="flex-1">
               <Text className="font-jakarta text-[13px] font-semibold text-[#3d4822]">
                 {status === 'downloading'
-                  ? `Downloading model (${Math.round(llm.downloadProgress * 100)}%)…`
-                  : `Loading ${selectedModel.name} into memory…`}
+                  ? `Downloading companion (${Math.round(llm.downloadProgress * 100)}%)…`
+                  : `Welcoming ${selectedModel.characterName}…`}
               </Text>
               <Text className="font-jakarta text-[11px] text-[#63723c] mt-0.5">
-                Nimo AI is preparing for on-device inference
+                Getting ready to chat with you
               </Text>
             </View>
           </Animated.View>
@@ -530,10 +589,10 @@ function ChatInterface({
                 <TouchableOpacity
                   key={suggestion}
                   activeOpacity={0.7}
-                  disabled={!llm.isReady}
-                  onPress={() => setInputText(suggestion)}
+                  disabled={!llm.isReady || hasReachedLimit}
+                  onPress={() => sendMessage(suggestion)}
                   className={`bg-white border border-[#efe9e1] rounded-full px-4 py-2.5 ${
-                    !llm.isReady ? 'opacity-50' : ''
+                    !llm.isReady || hasReachedLimit ? 'opacity-50' : ''
                   }`}
                 >
                   <Text className="font-jakarta text-[12px] text-[#6b5d51]">{suggestion}</Text>
@@ -595,35 +654,59 @@ function ChatInterface({
 
       {/* Input Bar */}
       <View className="px-4 pb-24 pt-2 border-t border-[#efe9e1] bg-[#fbf9f4]">
-        <View className="flex-row items-end gap-2 bg-white rounded-[22px] border border-[#ece5db] px-4 py-2">
-          <TextInput
-            className="flex-1 font-jakarta text-[14px] text-[#27170c] max-h-[100px] py-1.5"
-            placeholder={
-              !llm.isReady
-                ? 'Initializing Nimo AI model...'
-                : llm.isGenerating
-                ? 'Nimo is thinking...'
-                : 'Message Nimo...'
-            }
-            placeholderTextColor="#b3a598"
-            value={inputText}
-            onChangeText={setInputText}
-            multiline
-            editable={llm.isReady && !llm.isGenerating}
-            onSubmitEditing={sendMessage}
-            blurOnSubmit={false}
-          />
+        {hasReachedLimit ? (
           <TouchableOpacity
             activeOpacity={0.8}
-            onPress={sendMessage}
-            disabled={!inputText.trim() || !llm.isReady || llm.isGenerating}
-            className={`w-9 h-9 rounded-full items-center justify-center ${
-              inputText.trim() && llm.isReady && !llm.isGenerating ? 'bg-[#566434]' : 'bg-[#e4e2dd]'
-            }`}
+            onPress={() => router.push('/paywall')}
+            className="flex-row items-center justify-center bg-[#566434] rounded-[22px] py-4 shadow-md"
           >
-            <Send size={16} color={inputText.trim() && llm.isReady && !llm.isGenerating ? '#ffffff' : '#a89a8b'} />
+            <Sparkles size={16} color="#ffffff" style={{ marginRight: 8 }} />
+            <Text className="font-jakarta text-[15px] font-bold text-[#ffffff]">
+              Upgrade to continue chatting
+            </Text>
           </TouchableOpacity>
-        </View>
+        ) : !todayTask ? (
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => router.push('/(app)/home')}
+            className="flex-row items-center justify-center bg-[#b5651d] rounded-[22px] py-4 shadow-md"
+          >
+            <Sparkles size={16} color="#ffffff" style={{ marginRight: 8 }} />
+            <Text className="font-jakarta text-[15px] font-bold text-[#ffffff]">
+              Set a daily task to unlock chat
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <View className="flex-row items-end gap-2 bg-white rounded-[22px] border border-[#ece5db] px-4 py-2">
+            <TextInput
+              className="flex-1 font-jakarta text-[14px] text-[#27170c] max-h-[100px] py-1.5"
+              placeholder={
+                !llm.isReady
+                  ? `Preparing ${selectedModel.characterName}...`
+                  : llm.isGenerating
+                  ? 'Thinking...'
+                  : 'Message your companion...'
+              }
+              placeholderTextColor="#b3a598"
+              value={inputText}
+              onChangeText={setInputText}
+              multiline
+              editable={llm.isReady && !llm.isGenerating}
+              onSubmitEditing={() => sendMessage()}
+              blurOnSubmit={false}
+            />
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => sendMessage()}
+              disabled={!inputText.trim() || !llm.isReady || llm.isGenerating}
+              className={`w-9 h-9 rounded-full items-center justify-center ${
+                inputText.trim() && llm.isReady && !llm.isGenerating ? 'bg-[#566434]' : 'bg-[#e4e2dd]'
+              }`}
+            >
+              <Send size={16} color={inputText.trim() && llm.isReady && !llm.isGenerating ? '#ffffff' : '#a89a8b'} />
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </KeyboardAvoidingView>
   );
@@ -667,7 +750,7 @@ function ChatHeader({
           <Bot size={20} color="#ffffff" />
         </View>
         <View>
-          <Text className="font-playfair text-[20px] font-bold text-[#27170c]">Nimo AI</Text>
+          <Text className="font-playfair text-[20px] font-bold text-[#27170c]">{modelName}</Text>
           <View className="flex-row items-center gap-1">
             <View className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
             <Text className="font-jakarta text-[11px]" style={{ color }}>

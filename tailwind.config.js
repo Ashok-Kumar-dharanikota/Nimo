@@ -6,11 +6,11 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: '#27170c',
+        primary: 'hsl(var(--primary))',
         sage: '#A4B47C',
         chocolate: '#3E2B1F',
         terracotta: '#E67E22',
-        background: '#fbf9f4',
+        background: 'hsl(var(--background))',
         surface: '#fbf9f4',
         onSurface: '#1b1c19',
         onSurfaceVariant: '#4f453f',
@@ -19,7 +19,7 @@ module.exports = {
         surfaceContainerLowest: '#ffffff',
         surfaceVariant: '#e4e2dd',
         canvas: '#F2EFE9',
-        secondary: '#566434',
+        secondary: 'hsl(var(--secondary))',
         surfaceContainer: '#f0eee9',
         tertiaryContainer: '#4d2400',
         onTertiaryContainer: '#e37c1f',
@@ -44,6 +44,24 @@ module.exports = {
         darkCanvas: '#2e2e2e',
         darkSecondary: '#d9eaad',
         darkSurfaceContainer: '#30312e',
+
+        // React Native Reusables (Shadcn) aliases mapped to current theme
+        foreground: 'hsl(var(--foreground))',
+        card: 'hsl(var(--card))',
+        'card-foreground': 'hsl(var(--card-foreground))',
+        popover: 'hsl(var(--popover))',
+        'popover-foreground': 'hsl(var(--popover-foreground))',
+        'primary-foreground': 'hsl(var(--primary-foreground))',
+        'secondary-foreground': 'hsl(var(--secondary-foreground))',
+        muted: 'hsl(var(--muted))',
+        'muted-foreground': 'hsl(var(--muted-foreground))',
+        accent: 'hsl(var(--accent))',
+        'accent-foreground': 'hsl(var(--accent-foreground))',
+        destructive: 'hsl(var(--destructive))',
+        'destructive-foreground': 'hsl(var(--destructive-foreground))',
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
       },
       fontFamily: {
         jakarta: ['Plus Jakarta Sans', 'sans-serif'],

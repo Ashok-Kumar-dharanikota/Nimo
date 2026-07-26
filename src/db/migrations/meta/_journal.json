@@ -22,6 +22,27 @@
       "when": 1784919401000,
       "tag": "0002_add_media_and_title",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1784884286499,
+      "tag": "0003_lively_shockwave",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1784895998676,
+      "tag": "0004_blushing_sunset_bain",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1785065060045,
+      "tag": "0005_new_lyja",
+      "breakpoints": true
     }
   ]
 }

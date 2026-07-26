@@ -1,11 +1,12 @@
-import { Tabs, useRouter } from 'expo-router';
-import { House, Search, Sparkles, User, Plus } from 'lucide-react-native';
-import { View, TouchableOpacity } from 'react-native';
+import { useSubscription } from '@/components/SubscriptionProvider';
 import * as Haptics from 'expo-haptics';
-import { draftStore } from '@/store/draftStore';
+import { Tabs, useRouter } from 'expo-router';
+import { House, Plus, Search, User } from 'lucide-react-native';
+import { Image, TouchableOpacity, View } from 'react-native';
 
 export default function AppLayout() {
   const router = useRouter();
+  const { isPremium } = useSubscription();
 
   return (
     <Tabs
@@ -53,7 +54,6 @@ export default function AppLayout() {
               activeOpacity={0.85}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                draftStore.startDraft();
                 router.push({ pathname: '/(app)/home', params: { create: 'true' } });
               }}
               style={{
@@ -91,7 +91,13 @@ export default function AppLayout() {
         name="ai"
         options={{
           title: 'Nimo AI',
-          tabBarIcon: ({ color, size }) => <Sparkles size={size} color={color} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Image
+              source={require('../../../assets/images/nimo/nimoAI.png')}
+              style={{ width: size * 3, height: size * 3, tintColor: focused ? color : '#8c8e8a' }}
+              resizeMode="contain"
+            />
+          ),
         }}
       />
 

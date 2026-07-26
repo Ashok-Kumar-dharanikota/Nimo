@@ -1,24 +1,24 @@
-import React, { useState, useMemo } from 'react';
+import { db } from '@/db';
+import { journal, moment, dailyTask } from '@/db/schema';
+import { MomentVideoPlayer } from '@/features/home/components/MomentVideoPlayer';
+import { formatTime, parseSQLiteDate } from '@/features/home/utils/dateUtils';
+import { FlashList } from '@shopify/flash-list';
+import { useQuery } from '@tanstack/react-query';
+import { desc, eq } from 'drizzle-orm';
+import * as Haptics from 'expo-haptics';
+import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { ArrowLeft, Coffee, Heart, Search, Smile, Sparkle, Sparkles, Sun, X, CheckCircle, Circle } from 'lucide-react-native';
+import { useMemo, useState } from 'react';
 import {
-  View,
+  Image,
   Text,
   TextInput,
   TouchableOpacity,
-  Image,
-  Platform,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
-import { FlashList } from '@shopify/flash-list';
-import { Search, X, ArrowLeft, Play, Sparkle, Smile, Sparkles, Heart, Sun, Coffee } from 'lucide-react-native';
-import { useQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
-import * as Haptics from 'expo-haptics';
-import { db } from '@/db';
-import { moment, journal } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
-import { formatTime, parseSQLiteDate } from '@/features/home/utils/dateUtils';
-import { MomentVideoPlayer } from '@/features/home/components/MomentVideoPlayer';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface SearchMomentItem {
   id: number;
@@ -29,6 +29,7 @@ interface SearchMomentItem {
   title: string | null;
   mediaUri: string | null;
   mediaType: 'photo' | 'video' | null;
+  isTaskCompleted: boolean | null;
 }
 
 const EMOTION_ICON_MAP: Record<string, { Icon: any; color: string; bg: string; label: string }> = {
@@ -55,16 +56,30 @@ async function fetchAllMoments(): Promise<SearchMomentItem[]> {
     .leftJoin(journal, eq(moment.journalId, journal.id))
     .orderBy(desc(moment.createdAt));
 
-  return rows.map((r) => ({
-    id: r.id,
-    content: r.content,
-    createdAt: r.createdAt,
-    journalTitle: r.journalTitle ?? null,
-    emotion: r.emotion,
-    title: r.title ?? null,
-    mediaUri: r.mediaUri ?? null,
-    mediaType: (r.mediaType as 'photo' | 'video' | null) ?? null,
-  }));
+  // Fetch all tasks to map them by date
+  const allTasks = await db.select().from(dailyTask);
+  const taskMap = new Map();
+  allTasks.forEach((t) => {
+    taskMap.set(t.dateStr, t.isCompleted);
+  });
+
+  return rows.map((r) => {
+    const dateObj = parseSQLiteDate(r.createdAt);
+    const dateStr = dateObj.toLocaleDateString('en-CA'); // 'YYYY-MM-DD' - wait, dateUtils formatDateForSQLite uses local.
+    const sqlDateStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+    
+    return {
+      id: r.id,
+      content: r.content,
+      createdAt: r.createdAt,
+      journalTitle: r.journalTitle ?? null,
+      emotion: r.emotion,
+      title: r.title ?? null,
+      mediaUri: r.mediaUri ?? null,
+      mediaType: (r.mediaType as 'photo' | 'video' | null) ?? null,
+      isTaskCompleted: taskMap.has(sqlDateStr) ? taskMap.get(sqlDateStr) : null,
+    };
+  });
 }
 
 export default function SearchScreen() {
@@ -101,7 +116,11 @@ export default function SearchScreen() {
     const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
     return (
-      <View className="p-1.5 flex-1">
+      <TouchableOpacity 
+        activeOpacity={0.8}
+        onPress={() => router.push({ pathname: '/moment/[id]', params: { id: item.id } })}
+        className="p-1.5 flex-1"
+      >
         <View className="bg-white rounded-[20px] p-3 border border-[#efe9e1] shadow-sm overflow-hidden flex-col justify-between">
           {/* Media component with strict 1:1 Aspect Ratio */}
           {item.mediaUri ? (
@@ -132,9 +151,21 @@ export default function SearchScreen() {
                   {emotionConfig.label}
                 </Text>
               </View>
-              <Text className="font-jakarta text-[10px] font-medium text-[#a89a8b]">
-                {dateStr}
-              </Text>
+              
+              <View className="flex-row items-center gap-1.5">
+                {item.isTaskCompleted !== null && (
+                  <View>
+                    {item.isTaskCompleted ? (
+                      <CheckCircle size={12} color="#566434" />
+                    ) : (
+                      <Circle size={12} color="#b5651d" />
+                    )}
+                  </View>
+                )}
+                <Text className="font-jakarta text-[10px] font-medium text-[#a89a8b]">
+                  {dateStr}
+                </Text>
+              </View>
             </View>
 
             {displayTitle && (
@@ -152,7 +183,7 @@ export default function SearchScreen() {
             {timeStr}
           </Text>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -204,10 +235,28 @@ export default function SearchScreen() {
         </View>
       </View>
 
-      {/* 2-Column Masonry List with FlashList */}
-      <View className="flex-1 px-3 pt-2">
-        <FlashList
-          data={filteredMoments}
+      {/* Loading Skeletons */}
+      {isLoading ? (
+        <View className="flex-1 px-3 pt-2">
+          <View className="flex-row flex-wrap justify-between">
+            {[1, 2, 3, 4].map((i) => (
+              <View key={i} className="w-[48%] p-1.5 mb-2">
+                <View className="bg-white rounded-[20px] p-3 border border-[#efe9e1] shadow-sm">
+                  <Skeleton className="w-full aspect-square rounded-[14px] mb-2.5 bg-[#f0eee9]" />
+                  <Skeleton className="w-16 h-4 rounded-full mb-2 bg-[#f0eee9]" />
+                  <Skeleton className="w-3/4 h-4 rounded mb-1 bg-[#f0eee9]" />
+                  <Skeleton className="w-full h-3 rounded mb-1 bg-[#f0eee9]" />
+                  <Skeleton className="w-5/6 h-3 rounded bg-[#f0eee9]" />
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+      ) : (
+        /* 2-Column Masonry List with FlashList */
+        <View className="flex-1 px-3 pt-2">
+          <FlashList
+            data={filteredMoments}
           renderItem={renderMomentCard}
           keyExtractor={(item) => `search-moment-${item.id}`}
           numColumns={2}
@@ -231,6 +280,7 @@ export default function SearchScreen() {
           }
         />
       </View>
+      )}
     </SafeAreaView>
   );
 }

@@ -1,31 +1,35 @@
-import React, { useState, useEffect } from 'react';
+import { useDraftStore } from '@/store/draftStore';
+import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
 import {
-  View,
+  Bookmark,
+  CheckCircle,
+  Coffee,
+  Heart,
+  Image as ImageIcon,
+  PenTool,
+  Smile,
+  Sparkles,
+  Sun,
+  Video as VideoIcon,
+  X,
+} from 'lucide-react-native';
+import { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Image,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  Image,
-  ActivityIndicator,
-  StyleSheet,
+  View,
 } from 'react-native';
 import Animated, { FadeInDown, FadeOutUp } from 'react-native-reanimated';
-import * as ImagePicker from 'expo-image-picker';
-import * as Haptics from 'expo-haptics';
-import {
-  Smile,
-  Sparkles,
-  Heart,
-  Sun,
-  Coffee,
-  Image as ImageIcon,
-  Video as VideoIcon,
-  Edit3,
-  X,
-  Bookmark,
-  CheckCircle,
-} from 'lucide-react-native';
-import { useDraftStore } from '@/store/draftStore';
 import { useHomeData } from '../hooks/useHomeData';
+import { formatTime } from '../utils/dateUtils';
+import { useRouter } from 'expo-router';
+import { supabase } from '@/utils/supabase';
+import { uploadMediaToSupabase } from '@/lib/storageService';
 
 const FEELINGS = [
   { id: 'happy', label: 'Happy', Icon: Smile, color: '#566434', bg: '#eef1e4' },
@@ -36,16 +40,17 @@ const FEELINGS = [
 ];
 
 export function InlineDraftCard() {
+  const router = useRouter();
   const {
     isEditing,
+    draftId,
     title: storedTitle,
     content: storedContent,
     emotion: storedEmotion,
     mediaUri: storedMediaUri,
     mediaType: storedMediaType,
-    isDraftSaved,
+    createdAt: storedCreatedAt,
     updateDraft,
-    saveAsDraft,
     clearDraft,
   } = useDraftStore();
 
@@ -56,7 +61,7 @@ export function InlineDraftCard() {
   const [selectedFeeling, setSelectedFeeling] = useState<string | null>(storedEmotion);
   const [mediaUri, setMediaUri] = useState<string | null>(storedMediaUri);
   const [mediaType, setMediaType] = useState<'photo' | 'video' | null>(storedMediaType);
-  const [activeMedia, setActiveMedia] = useState<'photo' | 'video' | 'note'>('note');
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     setTitle(storedTitle);
@@ -66,7 +71,6 @@ export function InlineDraftCard() {
     setMediaType(storedMediaType);
   }, [storedTitle, storedContent, storedEmotion, storedMediaUri, storedMediaType]);
 
-  // Sync state changes with local draftStore
   const handleTitleChange = (val: string) => {
     setTitle(val);
     updateDraft({ title: val });
@@ -84,10 +88,8 @@ export function InlineDraftCard() {
     updateDraft({ emotion: next });
   };
 
-  const pickMedia = async (type: 'photo' | 'video') => {
+  const pickMedia = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setActiveMedia(type);
-
     try {
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permissionResult.granted) {
@@ -95,16 +97,15 @@ export function InlineDraftCard() {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes:
-          type === 'photo'
-            ? ImagePicker.MediaTypeOptions.Images
-            : ImagePicker.MediaTypeOptions.Videos,
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
         allowsEditing: true,
         quality: 0.8,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        const uri = result.assets[0].uri;
+        const asset = result.assets[0];
+        const uri = asset.uri;
+        const type: 'photo' | 'video' = asset.type === 'video' ? 'video' : 'photo';
         setMediaUri(uri);
         setMediaType(type);
         updateDraft({ mediaUri: uri, mediaType: type });
@@ -118,7 +119,6 @@ export function InlineDraftCard() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setMediaUri(null);
     setMediaType(null);
-    setActiveMedia('note');
     updateDraft({ mediaUri: null, mediaType: null });
   };
 
@@ -126,253 +126,284 @@ export function InlineDraftCard() {
     const trimmedContent = content.trim();
     if (!trimmedContent && !mediaUri) return;
 
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    try {
+      setIsUploading(true);
+      
+      let finalMediaUri = mediaUri;
+      if (mediaUri && mediaUri.startsWith('file://')) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          finalMediaUri = await uploadMediaToSupabase(mediaUri, mediaType || 'photo', session.user.id);
+        }
+      }
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      await addQuickMoment({
+        id: draftId,
+        content: trimmedContent || (mediaType === 'video' ? 'Recorded a video' : 'Captured a photo'),
+        emotion: selectedFeeling || undefined,
+        title: title.trim() || undefined,
+        mediaUri: finalMediaUri || undefined,
+        mediaType: mediaType || undefined,
+        isDraft: false,
+      });
+      clearDraft();
+    } catch (e: any) {
+      if (e.message === 'LIMIT_REACHED') {
+        router.push('/paywall');
+      } else {
+        console.error('Error saving moment:', e);
+      }
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleSaveAsDraft = async () => {
+    const trimmedContent = content.trim();
+    if (!trimmedContent && !mediaUri && !title.trim()) {
+      clearDraft();
+      return;
+    }
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await addQuickMoment({
+      id: draftId,
       content: trimmedContent || (mediaType === 'video' ? 'Recorded a video' : 'Captured a photo'),
       emotion: selectedFeeling || undefined,
       title: title.trim() || undefined,
       mediaUri: mediaUri || undefined,
       mediaType: mediaType || undefined,
+      isDraft: true,
     });
 
     clearDraft();
   };
 
-  const handleSaveAsDraft = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    saveAsDraft();
-  };
-
-  // If not editing and draft was saved as draft, render collapsed Draft Banner
-  if (!isEditing && isDraftSaved) {
-    return (
-      <Animated.View
-        entering={FadeInDown.duration(300)}
-        exiting={FadeOutUp.duration(200)}
-        style={styles.collapsedCard}
-      >
-        <View style={styles.collapsedHeader}>
-          <View style={styles.draftBadge}>
-            <Bookmark size={12} color="#566434" />
-            <Text style={styles.draftBadgeText}>Saved Draft</Text>
-          </View>
-          <TouchableOpacity onPress={clearDraft} activeOpacity={0.7} style={styles.discardIconBtn}>
-            <X size={16} color="#8c7c6c" />
-          </TouchableOpacity>
-        </View>
-
-        <Text style={styles.collapsedTitle} numberOfLines={1}>
-          {title || 'Untitled Moment Draft'}
-        </Text>
-        <Text style={styles.collapsedDesc} numberOfLines={2}>
-          {content || 'Tap to complete and plant this moment.'}
-        </Text>
-
-        <TouchableOpacity
-          onPress={() => useDraftStore().startDraft()}
-          activeOpacity={0.8}
-          style={styles.resumeBtn}
-        >
-          <Edit3 size={15} color="#566434" />
-          <Text style={styles.resumeBtnText}>Continue Editing Draft</Text>
-        </TouchableOpacity>
-      </Animated.View>
-    );
-  }
-
   if (!isEditing) return null;
+
+  const selectedFeelingObj = FEELINGS.find((f) => f.id === selectedFeeling);
+  const SelectedFeelingIcon = selectedFeelingObj?.Icon;
+  const draftTime = storedCreatedAt ? formatTime(storedCreatedAt) : formatTime(new Date().toISOString());
 
   return (
     <Animated.View
       entering={FadeInDown.duration(350)}
       exiting={FadeOutUp.duration(250)}
-      style={styles.cardContainer}
+      style={styles.timelineRow}
     >
-      {/* Top Card Header */}
-      <View style={styles.cardHeader}>
-        <View style={styles.editingBadge}>
-          <View style={styles.editingPulseDot} />
-          <Text style={styles.editingBadgeText}>New Moment</Text>
+      {/* Thread Node Circle on Left */}
+      <View style={styles.threadNodeCol}>
+        <View style={styles.threadDot}>
+          <PenTool size={14} color="#566434" />
         </View>
-
-        <TouchableOpacity onPress={clearDraft} activeOpacity={0.7} style={styles.discardIconBtn}>
-          <X size={18} color="#8c7c6c" />
-        </TouchableOpacity>
       </View>
 
-      {/* Media Preview if attached */}
-      {mediaUri ? (
-        <View style={styles.mediaPreviewContainer}>
-          {mediaType === 'photo' ? (
-            <Image source={{ uri: mediaUri }} style={styles.mediaImage} resizeMode="cover" />
-          ) : (
-            <View style={styles.videoPlaceholder}>
-              <VideoIcon size={28} color="#ffffff" />
-              <Text style={styles.videoPlaceholderText}>Video Attached</Text>
+      {/* Main Card Content on Right (takes same flex-1 size of normal cards) */}
+      <View style={styles.cardContentCol}>
+        {/* Creation Timestamp Header */}
+        <Text style={styles.timestampText}>{draftTime}</Text>
+
+        <View style={styles.cardContainer}>
+          {/* Card Header Badge & Discard */}
+          <View style={styles.cardHeader}>
+            <View style={styles.editingBadge}>
+              <View style={styles.editingPulseDot} />
+              <Text style={styles.editingBadgeText}>
+                {draftId ? 'Editing Draft' : 'New Moment'}
+              </Text>
             </View>
-          )}
-          <TouchableOpacity onPress={removeMedia} activeOpacity={0.8} style={styles.removeMediaBtn}>
-            <X size={14} color="#ffffff" />
-          </TouchableOpacity>
-        </View>
-      ) : null}
 
-      {/* Title Input */}
-      <TextInput
-        style={styles.titleInput}
-        placeholder="Give your moment a title…"
-        placeholderTextColor="#a89a8b"
-        value={title}
-        onChangeText={handleTitleChange}
-        returnKeyType="next"
-      />
+            <TouchableOpacity onPress={clearDraft} activeOpacity={0.7} style={styles.discardIconBtn}>
+              <X size={16} color="#8c7c6c" />
+            </TouchableOpacity>
+          </View>
 
-      {/* Content Input */}
-      <TextInput
-        style={styles.contentInput}
-        placeholder="What's on your mind? Capture your reflection…"
-        placeholderTextColor="#b3a598"
-        multiline
-        textAlignVertical="top"
-        value={content}
-        onChangeText={handleContentChange}
-      />
-
-      {/* Attachment Options Row */}
-      <View style={styles.attachmentBar}>
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => pickMedia('photo')}
-          style={[styles.attachBtn, activeMedia === 'photo' && styles.attachBtnActive]}
-        >
-          <ImageIcon size={18} color={activeMedia === 'photo' ? '#ffffff' : '#566434'} />
-          <Text
-            style={[styles.attachBtnText, activeMedia === 'photo' && styles.attachBtnTextActive]}
-          >
-            Photo
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => pickMedia('video')}
-          style={[styles.attachBtn, activeMedia === 'video' && styles.attachBtnActiveVideo]}
-        >
-          <VideoIcon size={18} color={activeMedia === 'video' ? '#ffffff' : '#b5651d'} />
-          <Text
-            style={[
-              styles.attachBtnText,
-              activeMedia === 'video' && styles.attachBtnTextActive,
-            ]}
-          >
-            Video
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => setActiveMedia('note')}
-          style={[styles.attachBtn, activeMedia === 'note' && styles.attachBtnActiveNote]}
-        >
-          <Edit3 size={18} color={activeMedia === 'note' ? '#ffffff' : '#8c7c6c'} />
-          <Text
-            style={[styles.attachBtnText, activeMedia === 'note' && styles.attachBtnTextActive]}
-          >
-            Note
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Feelings Selector */}
-      <View style={styles.feelingsRow}>
-        <Text style={styles.feelingsLabel}>Feeling:</Text>
-        <View style={styles.feelingsContainer}>
-          {FEELINGS.map(({ id, label, Icon, color, bg }) => {
-            const isSelected = selectedFeeling === id;
-            return (
-              <TouchableOpacity
-                key={id}
-                activeOpacity={0.7}
-                onPress={() => handleFeelingSelect(id)}
-                style={[
-                  styles.feelingPill,
-                  isSelected
-                    ? { backgroundColor: '#56643418', borderColor: '#566434' }
-                    : { backgroundColor: '#fbf9f4', borderColor: '#e4e2dd' },
-                ]}
-              >
-                <Icon size={14} color={isSelected ? '#566434' : color} />
-                <Text style={[styles.feelingPillText, isSelected && { color: '#566434', fontWeight: '700' }]}>
-                  {label}
-                </Text>
+          {/* Attached Media Preview */}
+          {mediaUri ? (
+            <View style={styles.mediaPreviewContainer}>
+              {mediaType === 'photo' ? (
+                <Image source={{ uri: mediaUri }} style={styles.mediaImage} resizeMode="cover" />
+              ) : (
+                <View style={styles.videoPlaceholder}>
+                  <VideoIcon size={24} color="#ffffff" />
+                  <Text style={styles.videoPlaceholderText}>Video Attached</Text>
+                </View>
+              )}
+              <TouchableOpacity onPress={removeMedia} activeOpacity={0.8} style={styles.removeMediaBtn}>
+                <X size={14} color="#ffffff" />
               </TouchableOpacity>
-            );
-          })}
+            </View>
+          ) : null}
+
+          {/* Title Input */}
+          <TextInput
+            style={styles.titleInput}
+            placeholder="Give your moment a title…"
+            placeholderTextColor="#a89a8b"
+            value={title}
+            onChangeText={handleTitleChange}
+            returnKeyType="next"
+          />
+
+          {/* Content Input */}
+          <TextInput
+            style={styles.contentInput}
+            placeholder="What's on your mind? Capture your reflection…"
+            placeholderTextColor="#b3a598"
+            multiline
+            textAlignVertical="top"
+            value={content}
+            onChangeText={handleContentChange}
+          />
+
+          {/* Attachment Action Button (Combined Media, Pen/Note removed) */}
+          <View style={styles.attachmentBar}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={pickMedia}
+              style={[styles.attachBtn, mediaUri ? styles.attachBtnActive : null]}
+            >
+              <ImageIcon size={17} color={mediaUri ? '#ffffff' : '#566434'} />
+              <Text style={[styles.attachBtnText, mediaUri ? styles.attachBtnTextActive : null]}>
+                {mediaUri ? (mediaType === 'video' ? 'Video Attached' : 'Photo Attached') : 'Add Photo / Video'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Feeling Header (shows text & icon next to Feeling label) */}
+          <View style={styles.feelingsRow}>
+            <View style={styles.feelingsLabelRow}>
+              <Text style={styles.feelingsLabel}>Feeling:</Text>
+              {selectedFeelingObj && SelectedFeelingIcon ? (
+                <View style={styles.selectedFeelingDisplay}>
+                  <SelectedFeelingIcon size={14} color={selectedFeelingObj.color} />
+                  <Text style={[styles.selectedFeelingText, { color: selectedFeelingObj.color }]}>
+                    {selectedFeelingObj.label}
+                  </Text>
+                </View>
+              ) : (
+                <Text style={styles.noFeelingText}>Select a feeling</Text>
+              )}
+            </View>
+
+            {/* Feelings List (Icons ONLY, text removed) */}
+            <View style={styles.feelingsContainer}>
+              {FEELINGS.map(({ id, Icon, color }) => {
+                const isSelected = selectedFeeling === id;
+                return (
+                  <TouchableOpacity
+                    key={id}
+                    activeOpacity={0.7}
+                    onPress={() => handleFeelingSelect(id)}
+                    style={[
+                      styles.feelingIconButton,
+                      isSelected
+                        ? { backgroundColor: '#56643418', borderColor: '#566434', borderWidth: 2 }
+                        : { backgroundColor: '#fbf9f4', borderColor: '#e4e2dd' },
+                    ]}
+                  >
+                    <Icon size={18} color={isSelected ? '#566434' : color} />
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* Action Buttons Row */}
+          <View style={styles.actionsRow}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleSaveAsDraft}
+              style={styles.saveDraftBtn}
+            >
+              <Bookmark size={15} color="#4f453f" />
+              <Text style={styles.saveDraftBtnText}>Save Draft</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={handlePlantMoment}
+              disabled={(!content.trim() && !mediaUri) || isAddingMoment || isUploading}
+              style={[
+                styles.plantBtn,
+                ((!content.trim() && !mediaUri) || isAddingMoment || isUploading) && styles.disabledPlantBtn,
+              ]}
+            >
+              {isAddingMoment || isUploading ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <ActivityIndicator color="white" size="small" />
+                  <Text style={styles.plantBtnText}>{isUploading ? 'Uploading...' : 'Saving...'}</Text>
+                </View>
+              ) : (
+                <>
+                  <CheckCircle size={15} color="white" />
+                  <Text style={styles.plantBtnText}>Plant Moment</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-
-      {/* Action Buttons Row */}
-      <View style={styles.actionsRow}>
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={handleSaveAsDraft}
-          style={styles.saveDraftBtn}
-        >
-          <Bookmark size={16} color="#4f453f" />
-          <Text style={styles.saveDraftBtnText}>Save as Draft</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={handlePlantMoment}
-          disabled={(!content.trim() && !mediaUri) || isAddingMoment}
-          style={[
-            styles.plantBtn,
-            ((!content.trim() && !mediaUri) || isAddingMoment) && styles.disabledPlantBtn,
-          ]}
-        >
-          {isAddingMoment ? (
-            <ActivityIndicator color="white" size="small" />
-          ) : (
-            <>
-              <CheckCircle size={16} color="white" />
-              <Text style={styles.plantBtnText}>Plant Moment</Text>
-            </>
-          )}
-        </TouchableOpacity>
       </View>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
+  timelineRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 20,
+  },
+  threadNodeCol: {
+    width: 28,
+    alignItems: 'center',
+    paddingTop: 2,
+    flexShrink: 0,
+  },
+  threadDot: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#eef1e4',
+    borderWidth: 2,
+    borderColor: '#c7d2ab',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardContentCol: {
+    flex: 1,
+  },
+  timestampText: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    color: '#a89a8b',
+    marginBottom: 8,
+    fontFamily: 'Plus Jakarta Sans',
+  },
   cardContainer: {
-    backgroundColor: '#ffffff',
-    borderRadius: 24,
-    padding: 18,
+    backgroundColor: 'transparent',
+    borderRadius: 20,
+    padding: 14,
     borderWidth: 1.5,
     borderColor: '#56643440',
-    marginBottom: 20,
-    shadowColor: '#566434',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
+    borderStyle: 'dashed',
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   editingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#eef1e4',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    gap: 5,
   },
   editingPulseDot: {
     width: 6,
@@ -381,25 +412,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#566434',
   },
   editingBadgeText: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '700',
     color: '#566434',
     fontFamily: 'Plus Jakarta Sans',
     textTransform: 'uppercase',
   },
   discardIconBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: '#f0eee9',
     alignItems: 'center',
     justifyContent: 'center',
   },
   mediaPreviewContainer: {
-    height: 120,
-    borderRadius: 16,
+    height: 110,
+    borderRadius: 14,
     overflow: 'hidden',
-    marginBottom: 12,
+    marginBottom: 10,
     backgroundColor: '#1c1a17',
     position: 'relative',
   },
@@ -411,7 +442,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 4,
   },
   videoPlaceholderText: {
     color: '#ffffff',
@@ -421,44 +452,43 @@ const styles = StyleSheet.create({
   },
   removeMediaBtn: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    top: 6,
+    right: 6,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: 'rgba(0,0,0,0.6)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   titleInput: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: '#27170c',
     fontFamily: 'Playfair Display',
     backgroundColor: '#fbf9f4',
     borderWidth: 1,
     borderColor: '#efe9e1',
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginBottom: 10,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 8,
   },
   contentInput: {
-    fontSize: 14,
+    fontSize: 13.5,
     color: '#27170c',
     fontFamily: 'Plus Jakarta Sans',
     backgroundColor: '#fbf9f4',
     borderWidth: 1,
     borderColor: '#efe9e1',
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    minHeight: 80,
-    marginBottom: 12,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minHeight: 70,
+    marginBottom: 10,
   },
   attachmentBar: {
     flexDirection: 'row',
-    gap: 8,
     marginBottom: 12,
   },
   attachBtn: {
@@ -477,14 +507,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#566434',
     borderColor: '#566434',
   },
-  attachBtnActiveVideo: {
-    backgroundColor: '#b5651d',
-    borderColor: '#b5651d',
-  },
-  attachBtnActiveNote: {
-    backgroundColor: '#8c7c6c',
-    borderColor: '#8c7c6c',
-  },
   attachBtnText: {
     fontSize: 12,
     fontWeight: '600',
@@ -495,134 +517,90 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   feelingsRow: {
-    marginBottom: 16,
+    marginBottom: 14,
+  },
+  feelingsLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
   },
   feelingsLabel: {
     fontSize: 12,
     fontWeight: '600',
     color: '#a89a8b',
     fontFamily: 'Plus Jakarta Sans',
-    marginBottom: 6,
   },
-  feelingsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  feelingPill: {
+  selectedFeelingDisplay: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
+    backgroundColor: '#f5f3ec',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
   },
-  feelingPillText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#6b5e52',
+  selectedFeelingText: {
+    fontSize: 11.5,
+    fontWeight: '700',
     fontFamily: 'Plus Jakarta Sans',
+  },
+  noFeelingText: {
+    fontSize: 11.5,
+    color: '#a89a8b',
+    fontStyle: 'italic',
+    fontFamily: 'Plus Jakarta Sans',
+  },
+  feelingsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  feelingIconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   actionsRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
   },
   saveDraftBtn: {
     flex: 1,
-    height: 46,
-    borderRadius: 14,
+    height: 42,
+    borderRadius: 12,
     backgroundColor: '#f0eee9',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 5,
   },
   saveDraftBtnText: {
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '600',
     color: '#4f453f',
     fontFamily: 'Plus Jakarta Sans',
   },
   plantBtn: {
     flex: 1.2,
-    height: 46,
-    borderRadius: 14,
+    height: 42,
+    borderRadius: 12,
     backgroundColor: '#566434',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 5,
   },
   disabledPlantBtn: {
     opacity: 0.5,
   },
   plantBtnText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     color: '#ffffff',
-    fontFamily: 'Plus Jakarta Sans',
-  },
-  // Collapsed Draft Banner
-  collapsedCard: {
-    backgroundColor: '#fbf9f4',
-    borderRadius: 20,
-    padding: 16,
-    borderWidth: 1.5,
-    borderColor: '#56643460',
-    borderStyle: 'dashed',
-    marginBottom: 20,
-  },
-  collapsedHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  draftBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#eef1e4',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-  },
-  draftBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#566434',
-    fontFamily: 'Plus Jakarta Sans',
-  },
-  collapsedTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#27170c',
-    fontFamily: 'Playfair Display',
-    marginBottom: 4,
-  },
-  collapsedDesc: {
-    fontSize: 13,
-    color: '#6b5e52',
-    fontFamily: 'Plus Jakarta Sans',
-    lineHeight: 18,
-    marginBottom: 10,
-  },
-  resumeBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#dde5cc',
-    borderRadius: 12,
-    paddingVertical: 8,
-  },
-  resumeBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#566434',
     fontFamily: 'Plus Jakarta Sans',
   },
 });

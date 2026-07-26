@@ -1,6 +1,6 @@
-import { MemoryVectorStore, type VectorStore, type Embeddings, type QueryResult } from 'react-native-rag';
 import { OPSQLiteVectorStore } from '@react-native-rag/op-sqlite';
 import { TextEmbeddingsModule, models } from 'react-native-executorch';
+import { MemoryVectorStore, type Embeddings, type QueryResult, type VectorStore } from 'react-native-rag';
 import { setupExecutorch } from './executorch';
 
 /**

@@ -29,11 +29,18 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useProfileStore } from '../hooks/useProfileStore';
 import { supabase } from '../../../../utils/supabase';
+import { clearLocalDatabase } from '@/lib/syncEngine';
+
+import { useSubscription } from '@/components/SubscriptionProvider';
+import { Sparkles } from 'lucide-react-native';
+import Purchases from 'react-native-purchases';
+import { Platform } from 'react-native';
 
 export function ProfileScreen() {
   const router = useRouter();
   const { profile, updateProfile } = useProfileStore();
   const { weeklyStreaks, memoryTree } = useHomeData();
+  const { isPremium } = useSubscription();
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [editName, setEditName] = useState(profile.name);
@@ -72,9 +79,21 @@ export function ProfileScreen() {
 
   const confirmSignOut = async () => {
     setSignOutModalVisible(false);
+    
+    // Clear local cache when signing out
+    await clearLocalDatabase();
+
     await supabase.auth.signOut();
+    if (Platform.OS !== 'web') {
+      try {
+        await Purchases.logOut();
+      } catch (err) {
+        console.warn('Failed to log out of RevenueCat', err);
+      }
+    }
     setSessionUser(null);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    router.replace('/auth');
   };
 
   const streak = calculateStreak(weeklyStreaks);
@@ -188,6 +207,17 @@ export function ProfileScreen() {
             Account
           </Text>
           <View className="bg-white rounded-[20px] border border-[#efe9e1] overflow-hidden mb-5">
+            {!isPremium && (
+              <>
+                <MenuItem
+                  icon={Sparkles}
+                  label="Upgrade to Premium"
+                  value=""
+                  onPress={() => router.push('/paywall')}
+                />
+                <View className="h-[1px] bg-[#efe9e1] mx-4" />
+              </>
+            )}
             <MenuItem
               icon={User}
               label="Edit Name"

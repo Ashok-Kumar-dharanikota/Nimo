@@ -3,6 +3,8 @@ import { Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
 import { calculateStreak } from "../utils/dateUtils";
 import { useProfileStore } from "@/features/profile/hooks/useProfileStore";
+import { useSubscription } from "@/components/SubscriptionProvider";
+import { SyncIndicator } from "./SyncIndicator";
 
 interface TopAppBarProps {
   moments?: Array<{ createdAt: string }>;
@@ -11,6 +13,7 @@ interface TopAppBarProps {
 export function TopAppBar({ moments = [] }: TopAppBarProps) {
   const router = useRouter();
   const { profile } = useProfileStore();
+  const { isPremium } = useSubscription();
   const streak = calculateStreak(moments);
   const hour = new Date().getHours();
 
@@ -34,7 +37,17 @@ export function TopAppBar({ moments = [] }: TopAppBarProps) {
         </Text>
       </View>
 
-      <View className="flex-row items-center gap-4">
+      <View className="flex-row items-center gap-3">
+        {!isPremium && (
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => router.push("/paywall")}
+            className="bg-[#566434] px-3 py-1.5 rounded-full"
+          >
+            <Text className="font-jakarta text-[12px] font-bold text-white">Upgrade</Text>
+          </TouchableOpacity>
+        )}
+        
         {/* Streak indicator */}
         <View className="flex-row items-center gap-1 bg-surfaceContainer px-3 py-1.5 rounded-full border border-outlineVariant/20">
           <MaterialIcons
@@ -47,17 +60,7 @@ export function TopAppBar({ moments = [] }: TopAppBarProps) {
           </Text>
         </View>
 
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => router.push("/profile")}
-          className="h-10 w-10 items-center justify-center rounded-full border border-outlineVariant bg-surfaceContainerLowest shadow-sm"
-        >
-          <Feather
-            name="user"
-            size={18}
-            color="#4f453f"
-          />
-        </TouchableOpacity>
+        {isPremium && <SyncIndicator />}
       </View>
     </View>
   );

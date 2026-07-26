@@ -18,6 +18,8 @@ import * as Haptics from 'expo-haptics';
 import { supabase } from '../../utils/supabase';
 import { useProfileStore } from '@/features/profile/hooks/useProfileStore';
 import { storage } from '@/lib/storage';
+import { pullRemoteChanges } from '@/lib/syncEngine';
+import Purchases from 'react-native-purchases';
 
 type AuthMode = 'signIn' | 'signUp' | 'forgot' | 'reset';
 
@@ -113,8 +115,26 @@ export default function AuthScreen() {
             name: userName,
           });
         }
+        
+        // Fetch any existing remote data for the user (even if free tier)
+        if (data.user?.id) {
+          pullRemoteChanges(data.user.id).catch(err => console.error('Error pulling remote changes:', err));
+        }
 
-        router.replace('/(app)/home');
+        if (Platform.OS !== 'web' && data.user?.id) {
+          try {
+            const { customerInfo } = await Purchases.logIn(data.user.id);
+            // Check if they are already premium
+            if (customerInfo && typeof customerInfo.entitlements.active['Nimo Premium'] !== 'undefined') {
+              router.replace('/(app)/home');
+              return;
+            }
+          } catch (err) {
+            console.warn('Failed to log in to RevenueCat', err);
+          }
+        }
+
+        router.replace('/paywall');
       }
     } catch (err: any) {
       setErrorMessage(err.message || 'An unexpected error occurred.');
@@ -156,7 +176,25 @@ export default function AuthScreen() {
           });
         }
 
-        router.replace('/(app)/home');
+        // Fetch any existing remote data for the user
+        if (data.user?.id) {
+          pullRemoteChanges(data.user.id).catch(err => console.error('Error pulling remote changes:', err));
+        }
+        
+        if (Platform.OS !== 'web' && data.user?.id) {
+          try {
+            const { customerInfo } = await Purchases.logIn(data.user.id);
+            // Check if they are already premium
+            if (customerInfo && typeof customerInfo.entitlements.active['Nimo Premium'] !== 'undefined') {
+              router.replace('/(app)/home');
+              return;
+            }
+          } catch (err) {
+            console.warn('Failed to log in to RevenueCat', err);
+          }
+        }
+
+        router.replace('/paywall');
       }
     } catch (err: any) {
       setErrorMessage(err.message || 'An unexpected error occurred.');

@@ -1,0 +1,1 @@
+ALTER TABLE `moment` ADD `is_draft` integer DEFAULT false NOT NULL;
