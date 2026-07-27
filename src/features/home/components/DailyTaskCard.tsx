@@ -15,115 +15,70 @@ const DEFAULT_TASKS = [
   'Do a random act of kindness',
 ];
 
-export function DailyTaskCard({ isAddingTask, onCancelAdd, onTaskSet }: { isAddingTask: boolean, onCancelAdd: () => void, onTaskSet: () => void }) {
-  const { todayTask, isLoading, setTodayTask, completeTask } = useTaskData();
+export function DailyTaskCard({ selectedDate }: { selectedDate?: Date }) {
+  const { todayTasks, isLoading, setTodayTask, completeTask } = useTaskData(selectedDate);
   const [customTask, setCustomTask] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // If there's no task and we're not explicitly adding one, hide it.
-  if (!todayTask && !isAddingTask) return null;
+  // If there's no task, hide it.
+  if (!todayTasks || todayTasks.length === 0) return null;
 
   const handleSelectTask = async (title: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setIsSubmitting(true);
     try {
       await setTodayTask(title);
-      // Once set, we trigger onTaskSet which handles closing selector and optionally starting draft
-      onTaskSet();
     } catch (e) {
       console.error(e);
     }
     setIsSubmitting(false);
   };
 
-  const handleComplete = async () => {
-    if (!todayTask) return;
+  const handleComplete = async (id: number, title: string) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    await completeTask({ id: todayTask.id, title: todayTask.title });
+    await completeTask({ id, title });
   };
 
-  const isCompleted = todayTask?.isCompleted;
-
-  if (todayTask) {
-    return (
-      <Animated.View entering={FadeInDown.duration(350)} exiting={FadeOutUp.duration(250)} style={styles.timelineRow}>
-        <View style={styles.threadNodeCol}>
-          <View style={[styles.threadDot, isCompleted ? styles.completedDot : null]}>
-            {isCompleted ? <CheckCircle size={14} color="#566434" /> : <Sparkles size={14} color="#b5651d" />}
-          </View>
-        </View>
-
-        <View style={styles.cardContentCol}>
-          <Text style={styles.timestampText}>Daily Task</Text>
-
-          <TouchableOpacity
-            activeOpacity={isCompleted ? 1 : 0.7}
-            onPress={isCompleted ? undefined : handleComplete}
-            style={[styles.cardContainer, isCompleted ? styles.completedCard : null]}
-          >
-            <View style={styles.taskRow}>
-              <View style={styles.checkCircle}>
-                {isCompleted ? <CheckCircle size={24} color="#566434" /> : <Circle size={24} color="#b5651d" />}
-              </View>
-              <Text style={[styles.taskTitle, isCompleted ? styles.completedTaskTitle : null]}>
-                {todayTask.title}
-              </Text>
-            </View>
-            {!isCompleted && (
-              <Text style={styles.taskSubtitle}>
-                Tap to complete and plant as a moment.
-              </Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
-    );
-  }
-
   return (
-    <Animated.View entering={FadeInDown.duration(350)} exiting={FadeOutUp.duration(250)} style={styles.timelineRow}>
-      <View style={styles.threadNodeCol}>
-        <View style={styles.threadDot}>
-          <Edit3 size={14} color="#566434" />
-        </View>
-      </View>
+    <>
+      {todayTasks?.map((task) => {
+        const isCompleted = task.isCompleted;
+        return (
+          <Animated.View key={task.id} entering={FadeInDown.duration(350)} exiting={FadeOutUp.duration(250)} style={styles.timelineRow}>
+            <View style={styles.threadNodeCol}>
+              <View style={[styles.threadDot, isCompleted ? styles.completedDot : null]}>
+                {isCompleted ? <CheckCircle size={14} color="#566434" /> : <Sparkles size={14} color="#b5651d" />}
+              </View>
+            </View>
 
-      <View style={styles.cardContentCol}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-           <Text style={styles.timestampText}>Choose Today's Task</Text>
-           <TouchableOpacity onPress={onCancelAdd}><Text style={{fontSize:11, color:'#a89a8b'}}>Cancel</Text></TouchableOpacity>
-        </View>
+            <View style={styles.cardContentCol}>
+              <Text style={styles.timestampText}>Daily Task</Text>
 
-        <View style={styles.cardContainer}>
-          <Text style={styles.selectorSubtitle}>Set a tiny task to unlock your garden today.</Text>
-          
-          <View style={styles.tasksList}>
-            {DEFAULT_TASKS.map((t) => (
-              <TouchableOpacity key={t} activeOpacity={0.7} onPress={() => handleSelectTask(t)} style={styles.taskOptionBtn}>
-                <Text style={styles.taskOptionText}>{t}</Text>
+              <TouchableOpacity
+                activeOpacity={isCompleted ? 1 : 0.7}
+                onPress={isCompleted ? undefined : () => handleComplete(task.id, task.title)}
+                style={[styles.cardContainer, isCompleted ? styles.completedCard : null]}
+              >
+                <View style={styles.taskRow}>
+                  <View style={styles.checkCircle}>
+                    {isCompleted ? <CheckCircle size={24} color="#566434" /> : <Circle size={24} color="#b5651d" />}
+                  </View>
+                  <Text style={[styles.taskTitle, isCompleted ? styles.completedTaskTitle : null]}>
+                    {task.title}
+                  </Text>
+                </View>
+                {!isCompleted && (
+                  <Text style={styles.taskSubtitle}>
+                    Tap to complete and plant as a moment.
+                  </Text>
+                )}
               </TouchableOpacity>
-            ))}
-          </View>
+            </View>
+          </Animated.View>
+        );
+      })}
 
-          <View style={styles.customTaskRow}>
-            <TextInput
-              style={styles.customTaskInput}
-              placeholder="Or write your own..."
-              placeholderTextColor="#a89a8b"
-              value={customTask}
-              onChangeText={setCustomTask}
-            />
-            <TouchableOpacity 
-              disabled={!customTask.trim() || isSubmitting} 
-              onPress={() => handleSelectTask(customTask.trim())}
-              style={[styles.customTaskSubmit, !customTask.trim() ? { opacity: 0.5 } : null]}
-            >
-              <Plus size={16} color="white" />
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Animated.View>
+    </>
   );
 }
 

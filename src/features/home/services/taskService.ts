@@ -11,24 +11,20 @@ export type DailyTaskItem = {
   dateStr: string;
 };
 
-export const getTodayTask = async (): Promise<DailyTaskItem | null> => {
-  const todayStr = formatDateForSQLite(new Date());
+export const getTodayTasks = async (targetDate: Date = new Date()): Promise<DailyTaskItem[]> => {
+  const targetDateStr = formatDateForSQLite(targetDate);
   const tasks = await db
     .select()
     .from(dailyTask)
-    .where(eq(dailyTask.dateStr, todayStr))
-    .orderBy(desc(dailyTask.createdAt))
-    .limit(1);
+    .where(eq(dailyTask.dateStr, targetDateStr))
+    .orderBy(desc(dailyTask.createdAt));
 
-  if (tasks.length > 0) {
-    return {
-      id: tasks[0].id,
-      title: tasks[0].title,
-      isCompleted: Boolean(tasks[0].isCompleted),
-      dateStr: tasks[0].dateStr,
-    };
-  }
-  return null;
+  return tasks.map(t => ({
+    id: t.id,
+    title: t.title,
+    isCompleted: Boolean(t.isCompleted),
+    dateStr: t.dateStr,
+  }));
 };
 
 export const setTodayTask = async (title: string): Promise<number> => {

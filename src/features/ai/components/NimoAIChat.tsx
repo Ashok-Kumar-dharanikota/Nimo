@@ -407,7 +407,7 @@ function ChatInterface({
   const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
   const { isPremium } = useSubscription();
   const { profile } = useProfileStore();
-  const { todayTask } = useTaskData();
+  const { todayTasks } = useTaskData();
 
   const modelConfig = selectedModel.getModelConfig();
 
@@ -665,7 +665,7 @@ Always be empathetic, concise, and encouraging. Keep responses under 3 paragraph
               Upgrade to continue chatting
             </Text>
           </TouchableOpacity>
-        ) : !todayTask ? (
+        ) : (!todayTasks || todayTasks.length === 0) ? (
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={() => router.push('/(app)/home')}

@@ -49,8 +49,10 @@ export const getRecentEntries = async () => {
   return result;
 };
 
-export const getTodaysFlow = async (): Promise<MomentItem[]> => {
+export const getTodaysFlow = async (targetDate: Date = new Date()): Promise<MomentItem[]> => {
+  const targetDateStr = formatDateForSQLite(targetDate);
   const todayStr = formatDateForSQLite(new Date()); 
+  const isToday = targetDateStr === todayStr;
   
   const todaysMoments = await db
     .select({
@@ -66,7 +68,7 @@ export const getTodaysFlow = async (): Promise<MomentItem[]> => {
     })
     .from(moment)
     .leftJoin(journal, eq(moment.journalId, journal.id))
-    .where(and(sql`date(${moment.createdAt}, 'localtime') = ${todayStr}`, isNull(moment.deletedAt)))
+    .where(and(sql`date(${moment.createdAt}, 'localtime') = ${targetDateStr}`, isNull(moment.deletedAt)))
     .orderBy(desc(moment.createdAt));
 
   const mappedResult = todaysMoments.map((row) => ({
@@ -81,8 +83,29 @@ export const getTodaysFlow = async (): Promise<MomentItem[]> => {
     isDraft: Boolean(row.isDraft),
   }));
 
+  // Fetch from supabase if not today and empty locally
+  if (mappedResult.length === 0 && !isToday) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      const { data, error } = await supabase.from('moment').select('*').eq('user_id', session.user.id).like('created_at', `${targetDateStr}%`);
+      if (data && data.length > 0) {
+        return data.map((row: any) => ({
+          id: row.local_id || -Math.floor(Math.random() * 1000000), // temp ID
+          content: row.content,
+          createdAt: row.created_at,
+          journalTitle: 'Synced Journal',
+          emotion: row.emotion,
+          title: row.title,
+          mediaUri: row.media_uri,
+          mediaType: row.media_type,
+          isDraft: row.is_draft,
+        }));
+      }
+    }
+  }
+
   // If there are no moments today, check if it's a brand new user
-  if (mappedResult.length === 0) {
+  if (mappedResult.length === 0 && isToday) {
     const totalMoments = await db.select({ value: count(moment.id) }).from(moment);
     if ((totalMoments[0]?.value ?? 0) === 0) {
       const { data: { session } } = await supabase.auth.getSession();

@@ -13,6 +13,7 @@ import {
   Sun,
   Video as VideoIcon,
   X,
+  Plus,
 } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import {
@@ -26,6 +27,7 @@ import {
 } from 'react-native';
 import Animated, { FadeInDown, FadeOutUp } from 'react-native-reanimated';
 import { useHomeData } from '../hooks/useHomeData';
+import { useTaskData } from '../hooks/useTaskData';
 import { formatTime } from '../utils/dateUtils';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/utils/supabase';
@@ -37,6 +39,15 @@ const FEELINGS = [
   { id: 'loved', label: 'Loved', Icon: Heart, color: '#a3506a', bg: '#f2e7ea' },
   { id: 'bright', label: 'Bright', Icon: Sun, color: '#d97706', bg: '#fef3c7' },
   { id: 'calm', label: 'Calm', Icon: Coffee, color: '#4f5c42', bg: '#eae3d6' },
+];
+
+const DEFAULT_TASKS = [
+  'Disconnect for an hour',
+  'Take a 15-minute mindful walk',
+  'Write three things you are grateful for',
+  'Reach out to an old friend',
+  'Spend 10 minutes in silence',
+  'Do a random act of kindness',
 ];
 
 export function InlineDraftCard() {
@@ -55,6 +66,11 @@ export function InlineDraftCard() {
   } = useDraftStore();
 
   const { addQuickMoment, isAddingMoment } = useHomeData();
+  const { todayTasks, setTodayTask } = useTaskData();
+
+  const [activeTab, setActiveTab] = useState<'task' | 'moment'>('moment');
+  const [customTask, setCustomTask] = useState('');
+  const [isSubmittingTask, setIsSubmittingTask] = useState(false);
 
   const [title, setTitle] = useState(storedTitle);
   const [content, setContent] = useState(storedContent);
@@ -70,6 +86,27 @@ export function InlineDraftCard() {
     setMediaUri(storedMediaUri);
     setMediaType(storedMediaType);
   }, [storedTitle, storedContent, storedEmotion, storedMediaUri, storedMediaType]);
+
+  useEffect(() => {
+    if (isEditing) {
+      const hasTasks = todayTasks && todayTasks.length > 0;
+      if (!hasTasks) {
+        setActiveTab('task');
+      }
+    }
+  }, [isEditing, todayTasks]);
+
+  const handleSelectTask = async (taskTitle: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setIsSubmittingTask(true);
+    try {
+      await setTodayTask(taskTitle);
+      setActiveTab('moment');
+    } catch (e) {
+      console.error(e);
+    }
+    setIsSubmittingTask(false);
+  };
 
   const handleTitleChange = (val: string) => {
     setTitle(val);
@@ -206,18 +243,70 @@ export function InlineDraftCard() {
 
         <View style={styles.cardContainer}>
           {/* Card Header Badge & Discard */}
-          <View style={styles.cardHeader}>
-            <View style={styles.editingBadge}>
-              <View style={styles.editingPulseDot} />
-              <Text style={styles.editingBadgeText}>
-                {draftId ? 'Editing Draft' : 'New Moment'}
-              </Text>
+          {/* Tab Selector & Discard */}
+          <View style={[styles.cardHeader, { marginBottom: 16 }]}>
+            <View style={{ flexDirection: 'row', backgroundColor: '#eef1e4', padding: 4, borderRadius: 24, borderWidth: 1, borderColor: '#dce3ca' }}>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setActiveTab('task')}
+                style={{ paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: activeTab === 'task' ? '#566434' : 'transparent' }}
+              >
+                <Text style={{ fontFamily: 'Plus Jakarta Sans', fontSize: 12, fontWeight: '700', color: activeTab === 'task' ? 'white' : '#566434' }}>
+                  Tiny Task
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => {
+                  if (!todayTasks || todayTasks.length === 0) return; // Prevent switching if no task
+                  setActiveTab('moment');
+                }}
+                style={{ paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: activeTab === 'moment' ? '#566434' : 'transparent', opacity: (!todayTasks || todayTasks.length === 0) ? 0.5 : 1 }}
+              >
+                <Text style={{ fontFamily: 'Plus Jakarta Sans', fontSize: 12, fontWeight: '700', color: activeTab === 'moment' ? 'white' : '#566434' }}>
+                  Moment
+                </Text>
+              </TouchableOpacity>
             </View>
 
             <TouchableOpacity onPress={clearDraft} activeOpacity={0.7} style={styles.discardIconBtn}>
               <X size={16} color="#8c7c6c" />
             </TouchableOpacity>
           </View>
+
+          {activeTab === 'task' ? (
+            <View>
+              <Text style={{ fontFamily: 'Plus Jakarta Sans', fontSize: 13, color: '#8c7c6c', marginBottom: 12 }}>
+                Set a tiny task to unlock your garden today.
+              </Text>
+              
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+                {DEFAULT_TASKS.map((t) => (
+                  <TouchableOpacity key={t} activeOpacity={0.7} onPress={() => handleSelectTask(t)} style={{ backgroundColor: '#f0eee9', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 16, borderWidth: 1, borderColor: '#e4e2dd' }}>
+                    <Text style={{ fontFamily: 'Plus Jakarta Sans', fontSize: 12, color: '#6b5d51' }}>{t}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TextInput
+                  style={{ flex: 1, backgroundColor: '#f0eee9', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, fontSize: 13, fontFamily: 'Plus Jakarta Sans', color: '#27170c' }}
+                  placeholder="Or write your own..."
+                  placeholderTextColor="#a89a8b"
+                  value={customTask}
+                  onChangeText={setCustomTask}
+                />
+                <TouchableOpacity 
+                  disabled={!customTask.trim() || isSubmittingTask} 
+                  onPress={() => handleSelectTask(customTask.trim())}
+                  style={[{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#566434', alignItems: 'center', justifyContent: 'center' }, !customTask.trim() ? { opacity: 0.5 } : null]}
+                >
+                  <Plus size={16} color="white" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <View>
 
           {/* Attached Media Preview */}
           {mediaUri ? (
@@ -343,6 +432,8 @@ export function InlineDraftCard() {
               )}
             </TouchableOpacity>
           </View>
+          </View>
+        )}
         </View>
       </View>
     </Animated.View>

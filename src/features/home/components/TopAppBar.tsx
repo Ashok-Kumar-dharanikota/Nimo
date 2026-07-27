@@ -1,4 +1,5 @@
 import { Feather, MaterialIcons } from "@expo/vector-icons";
+import { Gem } from "lucide-react-native";
 import { Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
 import { calculateStreak } from "../utils/dateUtils";
@@ -42,8 +43,9 @@ export function TopAppBar({ moments = [] }: TopAppBarProps) {
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={() => router.push("/paywall")}
-            className="bg-[#566434] px-3 py-1.5 rounded-full"
+            className="bg-black px-3 py-1.5 rounded-full flex-row items-center gap-1.5"
           >
+            <Gem size={12} color="#ffffff" />
             <Text className="font-jakarta text-[12px] font-bold text-white">Upgrade</Text>
           </TouchableOpacity>
         )}

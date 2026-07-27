@@ -5,16 +5,18 @@ import * as Haptics from 'expo-haptics';
 
 interface CalendarTooltipProps {
   children: React.ReactNode;
+  selectedDate?: Date;
+  onSelectDate?: (date: Date) => void;
 }
 
-export function CalendarTooltip({ children }: CalendarTooltipProps) {
+export function CalendarTooltip({ children, selectedDate, onSelectDate }: CalendarTooltipProps) {
   const triggerRef = React.useRef<React.ElementRef<typeof TooltipTrigger>>(null);
 
   // Generate a simple calendar grid for the current month
   const calendarData = useMemo(() => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth();
+    const targetDate = selectedDate || new Date();
+    const year = targetDate.getFullYear();
+    const month = targetDate.getMonth();
     
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -33,16 +35,24 @@ export function CalendarTooltip({ children }: CalendarTooltipProps) {
     }
     
     return {
-      monthName: today.toLocaleString('default', { month: 'long' }),
+      monthName: targetDate.toLocaleString('default', { month: 'long' }),
       year,
+      month,
       weeks,
-      currentDay: today.getDate()
+      currentDay: targetDate.getDate()
     };
-  }, []);
+  }, [selectedDate]);
 
   const handleDayPress = (day: number | null) => {
     if (!day) return;
     Haptics.selectionAsync();
+    
+    if (onSelectDate) {
+      const targetDate = selectedDate || new Date();
+      const newDate = new Date(targetDate.getFullYear(), targetDate.getMonth(), day);
+      onSelectDate(newDate);
+    }
+    
     triggerRef.current?.close();
   };
 
@@ -77,28 +87,39 @@ export function CalendarTooltip({ children }: CalendarTooltipProps) {
         
         {calendarData.weeks.map((week, wIndex) => (
           <View key={wIndex} className="flex-row justify-between mb-2">
-            {week.map((day, dIndex) => (
-              <TouchableOpacity
-                key={dIndex}
-                disabled={!day}
-                onPress={() => handleDayPress(day)}
-                className={`w-8 h-8 items-center justify-center rounded-full ${
-                  day === calendarData.currentDay ? 'bg-[#566434]' : ''
-                }`}
-              >
-                <Text
-                  className={`font-jakarta text-[13px] ${
-                    !day
-                      ? 'text-transparent'
-                      : day === calendarData.currentDay
-                      ? 'text-white font-bold'
-                      : 'text-[#4f453f]'
+            {week.map((day, dIndex) => {
+              let isFuture = false;
+              if (day) {
+                const cellDate = new Date(calendarData.year, calendarData.month, day);
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                isFuture = cellDate > today;
+              }
+              return (
+                <TouchableOpacity
+                  key={dIndex}
+                  disabled={!day || isFuture}
+                  onPress={() => handleDayPress(day)}
+                  className={`w-8 h-8 items-center justify-center rounded-full ${
+                    day === calendarData.currentDay ? 'bg-black' : ''
                   }`}
                 >
-                  {day || ''}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <Text
+                    className={`font-jakarta text-[13px] ${
+                      !day
+                        ? 'text-transparent'
+                        : day === calendarData.currentDay
+                        ? 'text-white font-bold'
+                        : isFuture
+                        ? 'text-[#d4c8bd]'
+                        : 'text-[#4f453f]'
+                    }`}
+                  >
+                    {day || ''}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
             {/* Fill empty spots if last week is short */}
             {week.length < 7 &&
               Array.from({ length: 7 - week.length }).map((_, i) => (

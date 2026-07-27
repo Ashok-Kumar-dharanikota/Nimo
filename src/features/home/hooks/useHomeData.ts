@@ -10,7 +10,7 @@ import {
 } from '../services/homeService';
 import { useSubscription } from '@/components/SubscriptionProvider';
 
-export const useHomeData = () => {
+export const useHomeData = (selectedDate?: Date) => {
   const queryClient = useQueryClient();
   const { isPremium } = useSubscription();
 
@@ -25,8 +25,8 @@ export const useHomeData = () => {
   });
 
   const todaysFlowQuery = useQuery({
-    queryKey: ['todaysFlow'],
-    queryFn: getTodaysFlow,
+    queryKey: ['todaysFlow', selectedDate?.toISOString()],
+    queryFn: () => getTodaysFlow(selectedDate),
   });
 
   const memoryTreeQuery = useQuery({

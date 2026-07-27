@@ -2,7 +2,7 @@ import { draftStore } from '@/store/draftStore';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { Bookmark, Calendar, Coffee, Edit3, Heart, Play, Search, Smile, Sparkle, Sparkles, Sun } from 'lucide-react-native';
-import { Image, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Text, TouchableOpacity, View, Pressable } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { formatTime } from '../utils/dateUtils';
 import { InlineDraftCard } from './InlineDraftCard';
@@ -26,10 +26,9 @@ interface StorybookTimelineProps {
   moments: MomentData[];
   onOpenCalendar?: () => void;
   onOpenSearch?: () => void;
-  isAddingTask?: boolean;
-  onCancelAddTask?: () => void;
-  onTaskSet?: () => void;
   onRecordTap?: () => void;
+  selectedDate?: Date;
+  onSelectDate?: (date: Date) => void;
 }
 
 const EMOTION_ICON_MAP: Record<string, { Icon: any; color: string; bg: string; label: string }> = {
@@ -44,18 +43,18 @@ export function StorybookTimeline({
   moments,
   onOpenCalendar,
   onOpenSearch,
-  isAddingTask = false,
-  onCancelAddTask,
-  onTaskSet,
   onRecordTap,
+  selectedDate,
+  onSelectDate,
 }: StorybookTimelineProps) {
-  const todayDateStr = new Date().toLocaleDateString('en-US', {
+  const targetDate = selectedDate || new Date();
+  const dateStr = targetDate.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   });
-
-
+  
+  const isToday = targetDate.toDateString() === new Date().toDateString();
 
   return (
     <Animated.View entering={FadeInDown.duration(400)} className="flex-1 pb-24">
@@ -63,15 +62,15 @@ export function StorybookTimeline({
       <View className="flex-row items-start justify-between px-6 pt-2 pb-5">
         <View>
           <Text className="font-playfair text-[32px] font-bold text-[#27170c] leading-none">
-            Today
+            {isToday ? 'Today' : dateStr.split(',')[0]}
           </Text>
           <Text className="font-jakarta text-[12.5px] font-medium text-[#8c7c6c] mt-1.5">
-            {todayDateStr}
+            {dateStr}
           </Text>
         </View>
 
         <View className="flex-row gap-2.5">
-          <CalendarTooltip>
+          <CalendarTooltip selectedDate={targetDate} onSelectDate={onSelectDate}>
             <View className="w-10 h-10 rounded-full bg-[#f0eee9] items-center justify-center border border-[#e4e2dd]">
               <Calendar size={17} color="#4f453f" />
             </View>
@@ -81,10 +80,10 @@ export function StorybookTimeline({
 
       {/* Threaded Storybook Feed Container */}
       <View className="relative px-6">
-        <DailyTaskCard isAddingTask={isAddingTask} onCancelAdd={onCancelAddTask || (() => {})} onTaskSet={onTaskSet || (() => {})} />
+        <DailyTaskCard selectedDate={selectedDate} />
 
         {/* Inline Draft Moment Card */}
-        <InlineDraftCard />
+        {isToday && <InlineDraftCard />}
 
         {/* Thread Vertical Connector Line — adjusted for 28px dot */}
         <View className="absolute left-[37px] top-4 bottom-8 w-[2px] bg-[#c7d2ab]" />
@@ -203,7 +202,7 @@ export function StorybookTimeline({
             );
           })}
 
-          {moments.length === 0 && (
+          {moments.length === 0 && isToday && (
             <Animated.View entering={FadeInDown.delay(100)} className="py-12 items-center justify-center">
               <View className="w-16 h-16 rounded-full bg-[#f0eee9] items-center justify-center mb-4 border border-[#e4e2dd]">
                 <Sparkles size={24} color="#8c7c6c" />
@@ -216,13 +215,24 @@ export function StorybookTimeline({
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                   if (onRecordTap) onRecordTap();
-                  else draftStore.startDraft();
                 }}
                 className="mt-6 bg-[#566434] px-6 py-3 rounded-full flex-row items-center gap-2"
               >
                 <Edit3 size={16} color="white" />
                 <Text className="font-jakarta text-[14px] font-semibold text-white">Record a Moment</Text>
               </TouchableOpacity>
+            </Animated.View>
+          )}
+
+          {moments.length === 0 && !isToday && (
+            <Animated.View entering={FadeInDown.delay(100)} className="py-12 items-center justify-center">
+              <View className="w-16 h-16 rounded-full bg-[#f0eee9] items-center justify-center mb-4 border border-[#e4e2dd]">
+                <Bookmark size={24} color="#8c7c6c" />
+              </View>
+              <Text className="font-playfair text-xl font-bold text-[#27170c]">No moments</Text>
+              <Text className="font-jakarta text-[13.5px] text-[#6b5d51] text-center mt-2 px-6 leading-relaxed">
+                There are no moments recorded on this date.
+              </Text>
             </Animated.View>
           )}
         </View>

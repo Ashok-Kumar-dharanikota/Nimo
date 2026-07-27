@@ -5,7 +5,7 @@ import { WeeklyStreaks } from '@/features/home/components/WeeklyStreaks';
 import { useHomeData } from '@/features/home/hooks/useHomeData';
 import { ensureStarterMomentsIfNewUser } from '@/features/home/services/seedMomentsService';
 import { ProfileScreen } from '@/features/profile/components/ProfileScreen';
-import { draftStore } from '@/store/draftStore';
+import { draftStore, useDraftStore } from '@/store/draftStore';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowRight } from 'lucide-react-native';
@@ -17,6 +17,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Alert,
 } from 'react-native';
 import Animated, { FadeInUp, FadeOutDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -27,6 +28,8 @@ export type BottomTab = 'timeline' | 'garden' | 'nimo-ai' | 'profile';
 
 export default function Home() {
   const params = useLocalSearchParams<{ create?: string; action?: string }>();
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+
   const {
     weeklyStreaks,
     todaysFlow,
@@ -35,14 +38,13 @@ export default function Home() {
     addQuickMoment,
     isAddingMoment,
     refetch,
-  } = useHomeData();
+  } = useHomeData(selectedDate);
 
   const [activeTab, setActiveTab] = useState<BottomTab>('timeline');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [isAddingTask, setIsAddingTask] = useState(false);
-
-  const { todayTask } = useTaskData();
+  const { todayTasks } = useTaskData(selectedDate);
+  const { isEditing, draftId } = useDraftStore();
 
   useEffect(() => {
     ensureStarterMomentsIfNewUser().then(() => {
@@ -52,15 +54,11 @@ export default function Home() {
 
   useEffect(() => {
     if (params.create === 'true' || params.action === 'create') {
-      if (!todayTask && !isAddingTask) {
-        setIsAddingTask(true);
-      } else if (todayTask) {
-        draftStore.startDraft();
-      }
+      draftStore.startDraft();
       // Reset params so we don't keep triggering
       router.setParams({ create: '', action: '' });
     }
-  }, [params.create, params.action, todayTask, isAddingTask]);
+  }, [params.create, params.action]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -108,15 +106,38 @@ export default function Home() {
   };
 
   const handleRecordTap = () => {
-    if (!todayTask) {
-      setIsAddingTask(true);
-    } else {
-      draftStore.startDraft();
-    }
+    draftStore.startDraft();
   };
 
   // Compute total moments / leaves grown
   const leavesCount = memoryTree.reduce((acc, day) => acc + (day.moments?.length || 0), 0);
+
+  let gardenTitle = 'Your Garden is Thriving';
+  let gardenSubtitle = '';
+  if (leavesCount === 0) {
+    gardenTitle = 'Start Your Garden';
+    gardenSubtitle = 'Plant your first reflection to grow a leaf of memory.';
+  } else {
+    const pastDays = memoryTree.filter(d => new Date(d.date) <= new Date() && d.moments.length > 0);
+    const lastRecordDate = pastDays.length > 0 ? new Date(pastDays[pastDays.length - 1].date) : null;
+    
+    if (lastRecordDate) {
+      const diffTime = Math.abs(new Date().getTime() - lastRecordDate.getTime());
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays >= 2 && diffDays <= 7) {
+         gardenTitle = 'Your Garden Misses You';
+         gardenSubtitle = `It's been ${diffDays} days since you last planted a memory. Come back and grow your garden!`;
+      } else if (diffDays > 7) {
+         gardenTitle = 'Your Garden is Waiting';
+         gardenSubtitle = `Your garden has been quiet. Plant a new memory to bring it back to life!`;
+      } else {
+         gardenSubtitle = `You have nurtured ${leavesCount} leaf${leavesCount === 1 ? '' : 'ves'}. Walk among your memories.`;
+      }
+    } else {
+         gardenSubtitle = `You have nurtured ${leavesCount} leaf${leavesCount === 1 ? '' : 'ves'}. Walk among your memories.`;
+    }
+  }
 
   // ─── Nimo AI Tab ──────────────────────────────────
   if (activeTab === 'nimo-ai') {
@@ -177,12 +198,10 @@ export default function Home() {
                       Memory Garden
                     </Text>
                     <Text className="font-playfair text-xl font-bold text-white leading-tight mb-1.5">
-                      Your Garden is Thriving
+                      {gardenTitle}
                     </Text>
                     <Text className="font-jakarta text-[12.5px] text-white/80 leading-snug mb-3">
-                      {leavesCount === 0
-                        ? 'Plant your first reflection to grow a leaf of memory.'
-                        : `You have nurtured ${leavesCount} leaf${leavesCount === 1 ? '' : 'ves'}. Walk among your memories.`}
+                      {gardenSubtitle}
                     </Text>
                     <View className="flex-row items-center gap-2 bg-white/15 self-start px-3.5 py-1.5 rounded-full border border-white/10">
                       <Text className="font-jakarta text-[11.5px] font-bold text-white">
@@ -207,13 +226,9 @@ export default function Home() {
               moments={todaysFlow}
               onOpenCalendar={handleOpenCalendar}
               onOpenSearch={() => router.push('/(app)/search')}
-              isAddingTask={isAddingTask}
-              onCancelAddTask={() => setIsAddingTask(false)}
-              onTaskSet={() => {
-                setIsAddingTask(false);
-                draftStore.startDraft();
-              }}
               onRecordTap={handleRecordTap}
+              selectedDate={selectedDate}
+              onSelectDate={setSelectedDate}
             />
           </>
         )}
