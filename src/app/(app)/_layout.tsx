@@ -3,10 +3,17 @@ import * as Haptics from 'expo-haptics';
 import { Tabs, useRouter } from 'expo-router';
 import { House, Plus, Search, User } from 'lucide-react-native';
 import { Image, TouchableOpacity, View } from 'react-native';
+import { useEffect } from 'react';
+import { useNotificationScheduler } from '@/hooks/useNotificationScheduler';
 
 export default function AppLayout() {
   const router = useRouter();
   const { isPremium } = useSubscription();
+  const { scheduleNotifications } = useNotificationScheduler();
+
+  useEffect(() => {
+    scheduleNotifications();
+  }, [scheduleNotifications]);
 
   return (
     <Tabs

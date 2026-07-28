@@ -22,6 +22,7 @@ import Animated, {
   Extrapolation,
 } from 'react-native-reanimated';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useNotificationScheduler } from '@/hooks/useNotificationScheduler';
 
 import { SlideIndicators } from '@/components/onboarding/SlideIndicators';
 import { OnboardingGetStarted } from '@/components/onboarding/OnboardingGetStarted';
@@ -59,10 +60,19 @@ const FEATURE_SLIDES = [
     description: 'Nimo helps you look back, understand and grow with your memories.',
     characterSource: require('@/assets/images/nimo/nimo_relive.png'),
   },
+  {
+    id: 'notifications',
+    iconEmoji: '🔔',
+    iconBg: '#fff4e6',
+    title: 'Stay on track',
+    titleHighlight: null,
+    description: 'Enable notifications to remember to record your moments and daily tasks.',
+    characterSource: require('@/assets/images/nimo/nimo_welcome.png'),
+  },
 ];
 
-// Total slides: welcome (0) + 3 features (1-3) + get-started (4)
-const TOTAL_SLIDES = 5;
+// Total slides: welcome (0) + 4 features (1-4) + get-started (5)
+const TOTAL_SLIDES = 6;
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
@@ -88,11 +98,18 @@ export default function Onboarding() {
     []
   );
 
-  const handleNext = useCallback(() => {
+  const { requestPermissions } = useNotificationScheduler();
+
+  const handleNext = useCallback(async () => {
+    // Index 4 is the notifications slide.
+    if (currentIndex === 4) {
+      await requestPermissions();
+    }
+    
     if (currentIndex < TOTAL_SLIDES - 1) {
       goToSlide(currentIndex + 1);
     }
-  }, [currentIndex, goToSlide]);
+  }, [currentIndex, goToSlide, requestPermissions]);
 
   const handleSkip = useCallback(() => {
     goToSlide(TOTAL_SLIDES - 1);

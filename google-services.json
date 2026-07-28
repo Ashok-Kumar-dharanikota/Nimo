@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "200516238326",
+    "project_id": "nimo---life-journal",
+    "storage_bucket": "nimo---life-journal.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:200516238326:android:b9620da9be7d3388c965d7",
+        "android_client_info": {
+          "package_name": "com.cornerstonestudio.nimoai"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBB9E96xxC3_sBjGNmKztpkHBnr1mHYiL0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

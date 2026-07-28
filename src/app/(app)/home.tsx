@@ -1,8 +1,10 @@
+import { Skeleton } from '@/components/ui/skeleton';
 import { NimoAIChat } from '@/features/ai/components/NimoAIChat';
 import { StorybookTimeline } from '@/features/home/components/StorybookTimeline';
 import { TopAppBar } from '@/features/home/components/TopAppBar';
 import { WeeklyStreaks } from '@/features/home/components/WeeklyStreaks';
 import { useHomeData } from '@/features/home/hooks/useHomeData';
+import { useTaskData } from '@/features/home/hooks/useTaskData';
 import { ensureStarterMomentsIfNewUser } from '@/features/home/services/seedMomentsService';
 import { ProfileScreen } from '@/features/profile/components/ProfileScreen';
 import { draftStore, useDraftStore } from '@/store/draftStore';
@@ -16,13 +18,10 @@ import {
   ScrollView,
   Text,
   TouchableOpacity,
-  View,
-  Alert,
+  View
 } from 'react-native';
 import Animated, { FadeInUp, FadeOutDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTaskData } from '@/features/home/hooks/useTaskData';
-import { Skeleton } from '@/components/ui/skeleton';
 
 export type BottomTab = 'timeline' | 'garden' | 'nimo-ai' | 'profile';
 
@@ -120,22 +119,22 @@ export default function Home() {
   } else {
     const pastDays = memoryTree.filter(d => new Date(d.date) <= new Date() && d.moments.length > 0);
     const lastRecordDate = pastDays.length > 0 ? new Date(pastDays[pastDays.length - 1].date) : null;
-    
+
     if (lastRecordDate) {
       const diffTime = Math.abs(new Date().getTime() - lastRecordDate.getTime());
       const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-      
+
       if (diffDays >= 2 && diffDays <= 7) {
-         gardenTitle = 'Your Garden Misses You';
-         gardenSubtitle = `It's been ${diffDays} days since you last planted a memory. Come back and grow your garden!`;
+        gardenTitle = 'Your Garden Misses You';
+        gardenSubtitle = `It's been ${diffDays} days since you last planted a memory. Come back and grow your garden!`;
       } else if (diffDays > 7) {
-         gardenTitle = 'Your Garden is Waiting';
-         gardenSubtitle = `Your garden has been quiet. Plant a new memory to bring it back to life!`;
+        gardenTitle = 'Your Garden is Waiting';
+        gardenSubtitle = `Your garden has been quiet. Plant a new memory to bring it back to life!`;
       } else {
-         gardenSubtitle = `You have nurtured ${leavesCount} leaf${leavesCount === 1 ? '' : 'ves'}. Walk among your memories.`;
+        gardenSubtitle = `You have nurtured ${leavesCount} leaf${leavesCount === 1 ? '' : 'ves'}. Walk among your memories.`;
       }
     } else {
-         gardenSubtitle = `You have nurtured ${leavesCount} leaf${leavesCount === 1 ? '' : 'ves'}. Walk among your memories.`;
+      gardenSubtitle = `You have nurtured ${leavesCount} leaf${leavesCount === 1 ? '' : 'ves'}. Walk among your memories.`;
     }
   }
 

@@ -1,9 +1,9 @@
 import { db } from '@/db';
 import { journal, moment } from '@/db/schema';
-import { eq, desc, sql, count, isNull, and } from 'drizzle-orm';
-import { formatDateForSQLite } from '../utils/dateUtils';
 import { ragService } from '@/lib/ragService';
 import { supabase } from '@/utils/supabase';
+import { and, count, desc, eq, isNull, sql } from 'drizzle-orm';
+import { formatDateForSQLite } from '../utils/dateUtils';
 
 export type MomentItem = {
   id: number;

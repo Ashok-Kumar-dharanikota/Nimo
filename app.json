@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Nimo",
+    "name": "Nimo - Life Journal",
     "slug": "Nimo",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -16,7 +16,8 @@
         "foregroundImage": "./assets/images/nimo/brand_logo.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.ashokkumard.Nimo"
+      "package": "com.cornerstonestudio.nimoai",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "output": "static",
@@ -30,12 +31,14 @@
           "backgroundColor": "#fbf9f4",
           "android": {
             "image": "./assets/images/nimo/brand_logo.png",
-            "imageWidth": 120
+            "imageWidth": 120,
           }
         }
       ],
       "expo-sqlite",
-      "expo-video"
+      "expo-video",
+      "expo-notifications",
+      "react-native-nitro-google-signin"
     ],
     "experiments": {
       "typedRoutes": true,
