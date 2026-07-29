@@ -5,6 +5,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Switch,
+  Linking,
 } from 'react-native';
 import { CustomModal } from '@/components/ui/CustomModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,6 +27,7 @@ import {
   ChevronRight,
   ArrowLeft,
   AlertTriangle,
+  Lightbulb,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
@@ -86,7 +88,10 @@ function Divider() {
 
 export default function Settings() {
   const router = useRouter();
-  const { profile, updateProfile, clearProfile } = useProfileStore();
+  const profile = useProfileStore((state) => state.profile);
+  const updateProfile = useProfileStore((state) => state.updateProfile);
+  const clearProfile = useProfileStore((state) => state.clearProfile);
+  const signOut = useProfileStore((state) => state.signOut);
 
   const themeLabels: Record<string, string> = {
     light: 'Light',
@@ -147,15 +152,30 @@ export default function Settings() {
             icon={User}
             label="Name"
             value={profile.name}
-            onPress={() => showInfo('Edit Name', 'Go to Profile screen to edit your name.')}
           />
           <Divider />
           <SettingsRow
             icon={Mail}
             label="Email"
             value={profile.email || 'Not set'}
-            onPress={() => showInfo('Email', 'Go to Profile screen to update your email or account.')}
           />
+          <Divider />
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={async () => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              await signOut();
+              router.replace('/auth');
+            }}
+            className="flex-row items-center px-4 py-3.5"
+          >
+            <View className="w-9 h-9 rounded-[12px] bg-[#f0eee9] items-center justify-center mr-3">
+              <Feather name="log-out" size={18} color="#4f453f" />
+            </View>
+            <Text className="font-jakarta text-[14px] font-medium text-[#27170c] flex-1">
+              Sign Out
+            </Text>
+          </TouchableOpacity>
         </SettingsSection>
 
         {/* Appearance */}
@@ -195,30 +215,7 @@ export default function Settings() {
           )}
         </SettingsSection>
 
-        {/* Storage & Data */}
-        <SettingsSection title="Storage & Data" delay={150}>
-          <SettingsRow
-            icon={HardDrive}
-            label="Clear Cache"
-            onPress={() => showInfo('Cache Cleared', 'Application cache has been cleared successfully.')}
-          />
-          <Divider />
-          <SettingsRow
-            icon={Feather}
-            label="Export Journal Data"
-            onPress={() => showInfo('Export Data', 'Journal data export feature is ready for use.')}
-          />
-        </SettingsSection>
 
-        {/* AI Settings */}
-        <SettingsSection title="AI Settings" delay={200}>
-          <SettingsRow
-            icon={Cpu}
-            label="On-Device Model"
-            value="Manage"
-            onPress={() => showInfo('AI Model', 'Navigate to the Nimo AI tab to manage on-device models.')}
-          />
-        </SettingsSection>
 
         {/* About */}
         <SettingsSection title="About" delay={250}>
@@ -234,6 +231,14 @@ export default function Settings() {
             icon={FileText}
             label="Terms of Service"
             onPress={() => router.push('/terms')}
+          />
+          <Divider />
+          <SettingsRow
+            icon={Lightbulb}
+            label="Request a Feature"
+            onPress={() => {
+              Linking.openURL('mailto:support@nimo.com?subject=Nimo%20Feature%20Request&body=Hi%20Nimo%20Team%2C%0A%0AI%20would%20love%20to%20see%20this%20feature%3A%0A%0A');
+            }}
           />
         </SettingsSection>
 

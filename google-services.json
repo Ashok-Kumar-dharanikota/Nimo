@@ -12,7 +12,20 @@
           "package_name": "com.cornerstonestudio.nimoai"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "200516238326-15buhtkb2cg2e230hp2q14bij3k3kuf3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.cornerstonestudio.nimoai",
+            "certificate_hash": "be727f210e8f96b252abfbee788ea5988e0c6a24"
+          }
+        },
+        {
+          "client_id": "200516238326-7m06gdstgbgu6unpt0m4j34nr9113v0l.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBB9E96xxC3_sBjGNmKztpkHBnr1mHYiL0"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "200516238326-7m06gdstgbgu6unpt0m4j34nr9113v0l.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

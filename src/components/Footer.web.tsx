@@ -7,7 +7,7 @@ export const Footer = () => {
         <div className="flex flex-col items-center md:items-start gap-2">
           <div className="flex items-center gap-2 px-2.5 py-1.25 rounded-full">
             {/* <img
-              src={require('../../assets/images/nimo/brand_logo.png')}
+              src={require('../../assets/images/nimo/nimo_logo.png')}
               className="w-10 h-10 object-contain"
               alt="Nimo Logo"
             /> */}

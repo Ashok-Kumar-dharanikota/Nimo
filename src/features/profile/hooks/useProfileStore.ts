@@ -1,7 +1,22 @@
+import { create } from 'zustand';
+import { persist, StateStorage, createJSONStorage } from 'zustand/middleware';
 import { createMMKV } from 'react-native-mmkv';
-import { useSyncExternalStore, useCallback } from 'react';
+import { storage as globalStorage } from '@/lib/storage';
 
 const storage = createMMKV({ id: 'nimo-profile-store' });
+
+const zustandStorage: StateStorage = {
+  setItem: (name, value) => {
+    return storage.set(name, value);
+  },
+  getItem: (name) => {
+    const value = storage.getString(name);
+    return value ?? null;
+  },
+  removeItem: (name) => {
+    return storage.remove(name);
+  },
+};
 
 export type ProfileData = {
   name: string;
@@ -12,17 +27,15 @@ export type ProfileData = {
   reminderTime: string; // HH:mm
 };
 
-const KEYS = {
-  name: 'profile_name',
-  email: 'profile_email',
-  avatarUri: 'profile_avatar_uri',
-  theme: 'profile_theme',
-  dailyReminderEnabled: 'profile_daily_reminder',
-  reminderTime: 'profile_reminder_time',
-} as const;
+interface ProfileState {
+  profile: ProfileData;
+  updateProfile: (updates: Partial<ProfileData>) => void;
+  clearProfile: () => void;
+  signOut: () => Promise<void>;
+}
 
 const DEFAULTS: ProfileData = {
-  name: 'Sarah',
+  name: 'User',
   email: '',
   avatarUri: null,
   theme: 'light',
@@ -30,67 +43,45 @@ const DEFAULTS: ProfileData = {
   reminderTime: '20:00',
 };
 
-let listeners: Array<() => void> = [];
-function emitChange() {
-  updateSnapshot();
-  listeners.forEach((l) => l());
-}
+export const useProfileStore = create<ProfileState>()(
+  persist(
+    (set) => ({
+      profile: DEFAULTS,
+      updateProfile: (updates) =>
+        set((state) => ({
+          profile: { ...state.profile, ...updates },
+        })),
+      clearProfile: () => set({ profile: DEFAULTS }),
+      signOut: async () => {
+        const { clearLocalDatabase } = require('@/lib/syncEngine');
+        const { GoogleOneTapSignIn } = require('react-native-nitro-google-signin');
+        const { Platform } = require('react-native');
+        const Purchases = require('react-native-purchases').default;
+        
+        await clearLocalDatabase();
+        
+        try {
+          await GoogleOneTapSignIn.signOut();
+        } catch (e) {
+          console.warn('Failed to sign out from Google', e);
+        }
+        
+        globalStorage.remove('google_access_token');
+        
+        if (Platform.OS !== 'web') {
+          try {
+            await Purchases.logOut();
+          } catch (err) {
+            console.warn('Failed to log out of RevenueCat', err);
+          }
+        }
 
-function subscribe(listener: () => void) {
-  listeners.push(listener);
-  return () => {
-    listeners = listeners.filter((l) => l !== listener);
-  };
-}
-
-function readFromStorage(): ProfileData {
-  return {
-    name: storage.getString(KEYS.name) ?? DEFAULTS.name,
-    email: storage.getString(KEYS.email) ?? DEFAULTS.email,
-    avatarUri: storage.getString(KEYS.avatarUri) ?? DEFAULTS.avatarUri,
-    theme: (storage.getString(KEYS.theme) as ProfileData['theme']) ?? DEFAULTS.theme,
-    dailyReminderEnabled: storage.getBoolean(KEYS.dailyReminderEnabled) ?? DEFAULTS.dailyReminderEnabled,
-    reminderTime: storage.getString(KEYS.reminderTime) ?? DEFAULTS.reminderTime,
-  };
-}
-
-let cachedSnapshot: ProfileData = readFromStorage();
-
-function updateSnapshot() {
-  cachedSnapshot = readFromStorage();
-}
-
-function getSnapshot(): ProfileData {
-  return cachedSnapshot;
-}
-
-export function useProfileStore() {
-  const profile = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
-
-  const updateProfile = useCallback((updates: Partial<ProfileData>) => {
-    if (updates.name !== undefined) storage.set(KEYS.name, updates.name);
-    if (updates.email !== undefined) storage.set(KEYS.email, updates.email);
-    if (updates.avatarUri !== undefined) {
-      if (updates.avatarUri === null) {
-        storage.remove(KEYS.avatarUri);
-      } else {
-        storage.set(KEYS.avatarUri, updates.avatarUri);
-      }
+        set({ profile: DEFAULTS });
+      },
+    }),
+    {
+      name: 'nimo-profile-storage',
+      storage: createJSONStorage(() => zustandStorage),
     }
-    if (updates.theme !== undefined) storage.set(KEYS.theme, updates.theme);
-    if (updates.dailyReminderEnabled !== undefined) storage.set(KEYS.dailyReminderEnabled, updates.dailyReminderEnabled);
-    if (updates.reminderTime !== undefined) storage.set(KEYS.reminderTime, updates.reminderTime);
-    emitChange();
-  }, []);
-
-  const clearProfile = useCallback(() => {
-    Object.values(KEYS).forEach((key) => storage.remove(key));
-    emitChange();
-  }, []);
-
-  return {
-    profile,
-    updateProfile,
-    clearProfile,
-  };
-}
+  )
+);

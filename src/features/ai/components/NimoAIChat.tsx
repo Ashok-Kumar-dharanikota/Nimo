@@ -1,52 +1,48 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator
-} from 'react-native';
-import Animated, {
-  FadeInDown,
-  FadeInUp,
-  FadeIn,
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withTiming,
-  withSequence,
-  Easing,
-} from 'react-native-reanimated';
+import { useSubscription } from '@/components/SubscriptionProvider';
+import { useTaskData } from '@/features/home/hooks/useTaskData';
+import { useProfileStore } from '@/features/profile/hooks/useProfileStore';
+import { setupExecutorch } from '@/lib/executorch';
+import { ragService } from '@/lib/ragService';
+import { storage } from '@/lib/storage';
 import { Feather } from '@expo/vector-icons';
+import * as Device from 'expo-device';
+import * as Haptics from 'expo-haptics';
+import { useRouter } from 'expo-router';
 import {
+  AlertCircle,
+  ArrowLeft,
+  Bot,
   Cpu,
   Download,
-  Sparkles,
-  Zap,
-  Star,
   Send,
-  Bot,
-  ArrowLeft,
-  CheckCircle2,
-  Loader,
-  AlertCircle,
-  X,
   Shield,
+  Sparkles,
+  Star
 } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
-import { useLLM, models } from 'react-native-executorch';
-import { useModelStore, AVAILABLE_MODELS, type AvailableModel } from '../hooks/useModelStore';
-import { ragService } from '@/lib/ragService';
-import { setupExecutorch } from '@/lib/executorch';
-import { storage } from '@/lib/storage';
-import { useSubscription } from '@/components/SubscriptionProvider';
-import { useRouter } from 'expo-router';
-import * as Device from 'expo-device';
-import { useProfileStore } from '@/features/profile/hooks/useProfileStore';
-import { useTaskData } from '@/features/home/hooks/useTaskData';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Platform,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
+import { useLLM } from 'react-native-executorch';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import Animated, {
+  Easing,
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
+import { AVAILABLE_MODELS, useModelStore, type AvailableModel } from '../hooks/useModelStore';
 
 // ─── Quality badge config ────────────────────────────────────────
 const QUALITY_BADGE: Record<string, { label: string; color: string; bg: string }> = {
@@ -210,11 +206,10 @@ function ModelCard({ model, isSelected, onSelect }: {
         onSelect();
       }}
       style={{ opacity: isSupported ? 1 : 0.6 }}
-      className={`rounded-[24px] p-5 border-2 mb-3 ${
-        isSelected
-          ? 'border-[#566434] bg-[#eef1e4]/60'
-          : 'border-[#efe9e1] bg-white'
-      }`}
+      className={`rounded-[24px] p-5 border-2 mb-3 ${isSelected
+        ? 'border-[#566434] bg-[#eef1e4]/60'
+        : 'border-[#efe9e1] bg-white'
+        }`}
     >
       <View className="flex-row items-start justify-between mb-2">
         <View className="flex-1 pr-4">
@@ -246,9 +241,8 @@ function ModelCard({ model, isSelected, onSelect }: {
           )}
         </View>
 
-        <View className={`w-6 h-6 rounded-full border-2 items-center justify-center ${
-          isSelected ? 'border-[#566434] bg-[#566434]' : 'border-[#d2c4bc]'
-        }`}>
+        <View className={`w-6 h-6 rounded-full border-2 items-center justify-center ${isSelected ? 'border-[#566434] bg-[#566434]' : 'border-[#d2c4bc]'
+          }`}>
           {isSelected && <Feather name="check" size={14} color="#fff" />}
         </View>
       </View>
@@ -375,16 +369,14 @@ function MessageBubble({ role, content }: { role: 'user' | 'assistant'; content:
         </View>
       )}
       <View
-        className={`px-4 py-3 ${
-          isUser
-            ? 'bg-[#27170c] rounded-[20px] rounded-br-[6px]'
-            : 'bg-white border border-[#efe9e1] rounded-[20px] rounded-bl-[6px]'
-        }`}
+        className={`px-4 py-3 ${isUser
+          ? 'bg-[#27170c] rounded-[20px] rounded-br-[6px]'
+          : 'bg-white border border-[#efe9e1] rounded-[20px] rounded-bl-[6px]'
+          }`}
       >
         <Text
-          className={`font-jakarta text-[14px] leading-relaxed ${
-            isUser ? 'text-[#fbf9f4]' : 'text-[#27170c]'
-          }`}
+          className={`font-jakarta text-[14px] leading-relaxed ${isUser ? 'text-[#fbf9f4]' : 'text-[#27170c]'
+            }`}
         >
           {content}
         </Text>
@@ -442,7 +434,7 @@ function ChatInterface({
 
   const hasReachedLimit = false; // !isPremium && dailyAiUsage >= 3;
 
-  // Configure system prompt once ready
+  // Configure system prompt and generation config once ready
   useEffect(() => {
     if (llm.isReady) {
       const userName = profile.name ? profile.name.split(' ')[0] : 'friend';
@@ -453,6 +445,10 @@ The user you are speaking to is named ${userName}.
 Here is your life story: ${selectedModel.lifeStory}
 If the user asks about you, feel free to share pieces of your life story in a conversational manner.
 Always be empathetic, concise, and encouraging. Keep responses under 3 paragraphs.`,
+        },
+        generationConfig: {
+          temperature: 0.7,
+          repetitionPenalty: 1.15,
         },
       });
     }
@@ -507,10 +503,10 @@ Always be empathetic, concise, and encouraging. Keep responses under 3 paragraph
   const status: 'downloading' | 'loading' | 'ready' | 'error' = llm.error
     ? 'error'
     : llm.isReady
-    ? 'ready'
-    : llm.downloadProgress > 0 && llm.downloadProgress < 1
-    ? 'downloading'
-    : 'loading';
+      ? 'ready'
+      : llm.downloadProgress > 0 && llm.downloadProgress < 1
+        ? 'downloading'
+        : 'loading';
 
   // ── Error state ──
   if (llm.error) {
@@ -531,8 +527,8 @@ Always be empathetic, concise, and encouraging. Keep responses under 3 paragraph
   return (
     <KeyboardAvoidingView
       className="flex-1"
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={0}
+      behavior="padding"
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
     >
       <ChatHeader
         modelName={selectedModel.characterName}
@@ -591,9 +587,8 @@ Always be empathetic, concise, and encouraging. Keep responses under 3 paragraph
                   activeOpacity={0.7}
                   disabled={!llm.isReady || hasReachedLimit}
                   onPress={() => sendMessage(suggestion)}
-                  className={`bg-white border border-[#efe9e1] rounded-full px-4 py-2.5 ${
-                    !llm.isReady || hasReachedLimit ? 'opacity-50' : ''
-                  }`}
+                  className={`bg-white border border-[#efe9e1] rounded-full px-4 py-2.5 ${!llm.isReady || hasReachedLimit ? 'opacity-50' : ''
+                    }`}
                 >
                   <Text className="font-jakarta text-[12px] text-[#6b5d51]">{suggestion}</Text>
                 </TouchableOpacity>
@@ -653,7 +648,7 @@ Always be empathetic, concise, and encouraging. Keep responses under 3 paragraph
       </ScrollView>
 
       {/* Input Bar */}
-      <View className="px-4 pb-24 pt-2 border-t border-[#efe9e1] bg-[#fbf9f4]">
+      <View className="px-4 pb-4 pt-2 border-t border-[#efe9e1] bg-[#fbf9f4]">
         {hasReachedLimit ? (
           <TouchableOpacity
             activeOpacity={0.8}
@@ -684,8 +679,8 @@ Always be empathetic, concise, and encouraging. Keep responses under 3 paragraph
                 !llm.isReady
                   ? `Preparing ${selectedModel.characterName}...`
                   : llm.isGenerating
-                  ? 'Thinking...'
-                  : 'Message your companion...'
+                    ? 'Thinking...'
+                    : 'Message your companion...'
               }
               placeholderTextColor="#b3a598"
               value={inputText}
@@ -699,9 +694,8 @@ Always be empathetic, concise, and encouraging. Keep responses under 3 paragraph
               activeOpacity={0.8}
               onPress={() => sendMessage()}
               disabled={!inputText.trim() || !llm.isReady || llm.isGenerating}
-              className={`w-9 h-9 rounded-full items-center justify-center ${
-                inputText.trim() && llm.isReady && !llm.isGenerating ? 'bg-[#566434]' : 'bg-[#e4e2dd]'
-              }`}
+              className={`w-9 h-9 rounded-full items-center justify-center ${inputText.trim() && llm.isReady && !llm.isGenerating ? 'bg-[#566434]' : 'bg-[#e4e2dd]'
+                }`}
             >
               <Send size={16} color={inputText.trim() && llm.isReady && !llm.isGenerating ? '#ffffff' : '#a89a8b'} />
             </TouchableOpacity>

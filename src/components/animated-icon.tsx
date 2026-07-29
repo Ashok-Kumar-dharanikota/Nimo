@@ -72,7 +72,7 @@ export function AnimatedSplashOverlay() {
         <Animated.View style={[styles.logoContainer, logoStyle]}>
           <Image
             style={styles.logo}
-            source={require('@/assets/images/nimo/brand_logo.png')}
+            source={require('@/assets/images/nimo/nimo_logo.png')}
             contentFit="contain"
           />
         </Animated.View>
@@ -125,7 +125,7 @@ export function AnimatedIcon() {
 
       <View style={styles.brandBackground} />
       <View style={styles.imageContainer}>
-        <Image style={styles.image} source={require('@/assets/images/nimo/brand_logo.png')} contentFit="contain" />
+        <Image style={styles.image} source={require('@/assets/images/nimo/nimo_logo.png')} contentFit="contain" />
       </View>
     </View>
   );

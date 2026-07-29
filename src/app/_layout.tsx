@@ -17,6 +17,7 @@ import { setupExecutorch } from '@/lib/executorch';
 import { SubscriptionProvider } from '@/components/SubscriptionProvider';
 import { GlobalDialog } from '@/components/GlobalDialog';
 import { PortalHost } from '@rn-primitives/portal';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 // Initialize ExecuTorch resource fetcher for on-device models
 setupExecutorch();
@@ -65,21 +66,23 @@ export default function TabLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <SubscriptionProvider>
-        <ThemeProvider value={DefaultTheme}>
-          <StatusBar style="dark" />
-          <AnimatedSplashOverlay />
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="onboarding" options={{ headerShown: false, animation: 'fade' }} />
-            <Stack.Screen name="auth" options={{ headerShown: false, animation: 'slide_from_right' }} />
-            <Stack.Screen name="(app)" options={{ headerShown: false }} />
-            <Stack.Screen name="compose" options={{ presentation: 'modal', headerShown: false, animation: 'slide_from_bottom' }} />
-            <Stack.Screen name="paywall" options={{ presentation: 'modal', headerShown: false, animation: 'slide_from_bottom' }} />
-          </Stack>
-          <GlobalDialog />
-          <PortalHost />
-        </ThemeProvider>
-      </SubscriptionProvider>
+      <KeyboardProvider statusBarTranslucent navigationBarTranslucent>
+        <SubscriptionProvider>
+          <ThemeProvider value={DefaultTheme}>
+            <StatusBar style="dark" />
+            <AnimatedSplashOverlay />
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="onboarding" options={{ headerShown: false, animation: 'fade' }} />
+              <Stack.Screen name="auth" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="(app)" options={{ headerShown: false }} />
+              <Stack.Screen name="compose" options={{ presentation: 'modal', headerShown: false, animation: 'slide_from_bottom' }} />
+              <Stack.Screen name="paywall" options={{ presentation: 'modal', headerShown: false, animation: 'slide_from_bottom' }} />
+            </Stack>
+            <GlobalDialog />
+            <PortalHost />
+          </ThemeProvider>
+        </SubscriptionProvider>
+      </KeyboardProvider>
     </QueryClientProvider>
   );
 }

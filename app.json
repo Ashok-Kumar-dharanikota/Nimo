@@ -4,16 +4,16 @@
     "slug": "Nimo",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/nimo/brand_logo.png",
+    "icon": "./assets/images/nimo/nimo_logo.png",
     "scheme": "nimo",
     "userInterfaceStyle": "light",
     "ios": {
-      "icon": "./assets/images/nimo/brand_logo.png"
+      "icon": "./assets/images/nimo/nimo_logo.png"
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#fbf9f4",
-        "foregroundImage": "./assets/images/nimo/brand_logo.png"
+        "foregroundImage": "./assets/images/nimo/nimo_logo.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.cornerstonestudio.nimoai",
@@ -30,8 +30,8 @@
         {
           "backgroundColor": "#fbf9f4",
           "android": {
-            "image": "./assets/images/nimo/brand_logo.png",
-            "imageWidth": 120,
+            "image": "./assets/images/nimo/nimo_logo.png",
+            "imageWidth": 120
           }
         }
       ],

@@ -1,30 +1,27 @@
 import { Redirect } from 'expo-router';
 import { storage } from '@/lib/storage';
 import { useEffect, useState } from 'react';
-import { supabase } from '../../utils/supabase';
 import { View, ActivityIndicator } from 'react-native';
-import { pullRemoteChanges } from '@/lib/syncEngine';
+import { GoogleOneTapSignIn } from 'react-native-nitro-google-signin';
 
 export default function Index() {
-  const [session, setSession] = useState<any>(undefined);
+  const [sessionChecked, setSessionChecked] = useState(false);
+  const [isSignedIn, setIsSignedIn] = useState(false);
   const hasSeenOnboarding = storage.getBoolean('hasSeenOnboarding');
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session || null);
-      if (data.session?.user?.id) {
-        pullRemoteChanges(data.session.user.id).catch(err => console.error('Error pulling remote changes on load:', err));
+    const initAuth = async () => {
+      // Check if access token exists in storage
+      const token = storage.getString('google_access_token');
+      if (token) {
+        setIsSignedIn(true);
       }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session || null);
-    });
-
-    return () => subscription.unsubscribe();
+      setSessionChecked(true);
+    };
+    initAuth();
   }, []);
 
-  if (session === undefined) {
+  if (!sessionChecked) {
     return (
       <View style={{ flex: 1, backgroundColor: '#fbf9f4', justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator color="#566434" />
@@ -32,12 +29,8 @@ export default function Index() {
     );
   }
 
-  if (session) {
+  if (isSignedIn) {
     return <Redirect href="/(app)" />;
-  }
-
-  if (!hasSeenOnboarding) {
-    return <Redirect href="/onboarding" />;
   }
 
   return <Redirect href="/auth" />;

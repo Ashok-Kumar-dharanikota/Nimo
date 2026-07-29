@@ -36,15 +36,12 @@ export function useNotificationScheduler() {
 
     const firstName = profile.name ? profile.name.trim().split(" ")[0] : "there";
 
-    // 1. Daily Notifications (9 AM, 1 PM, 5 PM, 8 PM)
-    const dailyTimes = [
-      { hour: 9, minute: 0 },
-      { hour: 13, minute: 0 },
-      { hour: 17, minute: 0 },
-      { hour: 20, minute: 0 },
-    ];
+    // 1. Daily Notification
+    if (profile.dailyReminderEnabled) {
+      const [hourStr, minuteStr] = profile.reminderTime.split(':');
+      const hour = parseInt(hourStr, 10) || 20;
+      const minute = parseInt(minuteStr, 10) || 0;
 
-    for (const time of dailyTimes) {
       await Notifications.scheduleNotificationAsync({
         content: {
           title: `Hi ${firstName}! 🌟`,
@@ -52,8 +49,8 @@ export function useNotificationScheduler() {
         },
         trigger: {
           channelId: 'daily',
-          hour: time.hour,
-          minute: time.minute,
+          hour: hour,
+          minute: minute,
           type: Notifications.SchedulableTriggerInputTypes.DAILY,
         },
       });
@@ -76,7 +73,7 @@ export function useNotificationScheduler() {
         },
       });
     }
-  }, [profile.name, isPremium]);
+  }, [profile.name, profile.dailyReminderEnabled, profile.reminderTime, isPremium]);
 
   const initChannels = async () => {
     if (Platform.OS === 'android') {

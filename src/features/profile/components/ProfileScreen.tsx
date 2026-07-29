@@ -18,23 +18,24 @@ import {
 } from 'lucide-react-native';
 import { useState, useEffect } from 'react';
 import {
-  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { CustomModal } from '@/components/ui/CustomModal';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useProfileStore } from '../hooks/useProfileStore';
-import { supabase } from '../../../../utils/supabase';
 import { clearLocalDatabase } from '@/lib/syncEngine';
 
 import { useSubscription } from '@/components/SubscriptionProvider';
 import { Sparkles } from 'lucide-react-native';
 import Purchases from 'react-native-purchases';
 import { Platform } from 'react-native';
+import { storage } from '@/lib/storage';
+import { GoogleOneTapSignIn } from 'react-native-nitro-google-signin';
 
 export function ProfileScreen() {
   const router = useRouter();
@@ -44,30 +45,13 @@ export function ProfileScreen() {
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [editName, setEditName] = useState(profile.name);
-  const [sessionUser, setSessionUser] = useState<any>(null);
+  const [isSignedIn, setIsSignedIn] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setSessionUser(session.user);
-        if (session.user.email) {
-          const userName = session.user.user_metadata?.name || profile.name;
-          updateProfile({ email: session.user.email, name: userName });
-        }
-      }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSessionUser(session?.user ?? null);
-      if (session?.user?.email) {
-        const userName = session.user.user_metadata?.name || profile.name;
-        updateProfile({ email: session.user.email, name: userName });
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
+    const token = storage.getString('google_access_token');
+    if (token) {
+       setIsSignedIn(true);
+    }
   }, []);
 
   const [signOutModalVisible, setSignOutModalVisible] = useState(false);
@@ -83,7 +67,14 @@ export function ProfileScreen() {
     // Clear local cache when signing out
     await clearLocalDatabase();
 
-    await supabase.auth.signOut();
+    try {
+      await GoogleOneTapSignIn.signOut();
+    } catch (e) {
+      console.warn('Failed to sign out from Google', e);
+    }
+    
+    storage.remove('google_access_token');
+
     if (Platform.OS !== 'web') {
       try {
         await Purchases.logOut();
@@ -91,7 +82,8 @@ export function ProfileScreen() {
         console.warn('Failed to log out of RevenueCat', err);
       }
     }
-    setSessionUser(null);
+    setIsSignedIn(false);
+    updateProfile({ email: '', name: 'Guest', avatarUri: null });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     router.replace('/auth');
   };
@@ -117,7 +109,7 @@ export function ProfileScreen() {
 
   return (
     <SafeAreaView className="flex-1">
-      <ScrollView
+      <KeyboardAwareScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
@@ -233,7 +225,7 @@ export function ProfileScreen() {
               label="Email"
               value={profile.email || 'Not set'}
               onPress={() => {
-                if (!sessionUser) {
+                if (!isSignedIn) {
                   router.push('/auth');
                 } else {
                   setInfoModalConfig({
@@ -245,7 +237,7 @@ export function ProfileScreen() {
               }}
             />
             <View className="h-[1px] bg-[#efe9e1] mx-4" />
-            {sessionUser ? (
+            {isSignedIn ? (
               <MenuItem
                 icon={LogOut}
                 label="Sign Out"
@@ -274,7 +266,7 @@ export function ProfileScreen() {
             <MenuItem icon={FileText} label="Terms of Service" onPress={() => router.push('/terms')} />
           </View>
         </Animated.View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       {/* Sign Out Custom Modal */}
       <CustomModal

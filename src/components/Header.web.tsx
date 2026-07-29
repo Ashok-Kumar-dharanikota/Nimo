@@ -11,7 +11,7 @@ export const Header = () => {
         <Link href="/" className="flex items-center group pl-5">
           <div className="flex flex-row items-center transition-all duration-300">
             <img
-              src={require('../../assets/images/nimo/brand_logo.png')}
+              src={require('../../assets/images/nimo/nimo_logo.png')}
               className="h-12 w-auto object-cover"
               alt="Nimo Logo"
             />
