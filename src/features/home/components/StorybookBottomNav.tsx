@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { List, Circle, Plus, Cpu, User } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
 interface StorybookBottomNavProps {
@@ -37,8 +37,7 @@ export function StorybookBottomNav({
         }}
         className="items-center justify-center gap-0.5 px-3 py-1"
       >
-        <Feather
-          name="list"
+        <List
           size={20}
           color={activeTab === 'timeline' ? '#566434' : '#a89a8b'}
         />
@@ -63,8 +62,7 @@ export function StorybookBottomNav({
         }}
         className="items-center justify-center gap-0.5 px-3 py-1"
       >
-        <Feather
-          name="circle"
+        <Circle
           size={20}
           color={activeTab === 'garden' ? '#566434' : '#a89a8b'}
         />
@@ -95,7 +93,7 @@ export function StorybookBottomNav({
           elevation: 10,
         }}
       >
-        <Feather name="plus" size={26} color="#ffffff" />
+        <Plus size={26} color="#ffffff" />
       </TouchableOpacity>
 
       {/* 4. Nimo AI */}
@@ -110,8 +108,7 @@ export function StorybookBottomNav({
         }}
         className="items-center justify-center gap-0.5 px-3 py-1"
       >
-        <Feather
-          name="cpu"
+        <Cpu
           size={20}
           color={activeTab === 'nimo-ai' ? '#566434' : '#a89a8b'}
         />
@@ -136,8 +133,7 @@ export function StorybookBottomNav({
         }}
         className="items-center justify-center gap-0.5 px-3 py-1"
       >
-        <Feather
-          name="user"
+        <User
           size={20}
           color={activeTab === 'profile' ? '#566434' : '#a89a8b'}
         />

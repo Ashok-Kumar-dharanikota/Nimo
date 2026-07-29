@@ -15,7 +15,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { MaterialIcons } from '@expo/vector-icons';
+import { X, Book } from 'lucide-react-native';
 import type { MomentItem } from '../../services/homeService';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -105,7 +105,7 @@ export function MomentSheet({ moment, onClose }: MomentSheetProps) {
                 <Text style={styles.timeText}>{timeStr}</Text>
               </View>
               <TouchableOpacity onPress={dismiss} style={styles.closeBtn}>
-                <MaterialIcons name="close" size={20} color="#4f453f" />
+                <X size={20} color="#4f453f" />
               </TouchableOpacity>
             </View>
           </View>
@@ -121,7 +121,7 @@ export function MomentSheet({ moment, onClose }: MomentSheetProps) {
 
           {moment.journalTitle && (
             <View style={styles.journalTag}>
-              <MaterialIcons name="book" size={12} color="#566434" />
+              <Book size={12} color="#566434" />
               <Text style={styles.journalText}>{moment.journalTitle}</Text>
             </View>
           )}

@@ -4,6 +4,12 @@
     "slug": "Nimo",
     "version": "1.0.0",
     "orientation": "portrait",
+    "updates": {
+      "url": "https://u.expo.dev/e963b477-ea1d-47a4-88ff-03bc1b408911"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "icon": "./assets/images/nimo/nimo_logo.png",
     "scheme": "nimo",
     "userInterfaceStyle": "light",

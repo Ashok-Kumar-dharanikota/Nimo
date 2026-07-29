@@ -10,11 +10,10 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { Feather, AntDesign } from '@expo/vector-icons';
+import { AlertCircle } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useProfileStore } from '@/features/profile/hooks/useProfileStore';
 import { storage } from '@/lib/storage';
-import Purchases from 'react-native-purchases';
 import { GoogleOneTapSignIn } from 'react-native-nitro-google-signin';
 
 GoogleOneTapSignIn.configure({
@@ -58,17 +57,6 @@ export default function AuthScreen() {
           storage.set('google_access_token', tokens.accessToken);
         }
 
-        if (Platform.OS !== 'web' && userInfo.user.id) {
-          try {
-            const { customerInfo } = await Purchases.logIn(userInfo.user.id);
-            if (customerInfo && typeof customerInfo.entitlements.active['Nimo Premium'] !== 'undefined') {
-              router.replace('/(app)');
-              return;
-            }
-          } catch (err) {
-            console.warn('Failed to log in to RevenueCat', err);
-          }
-        }
         
         router.replace('/(app)');
       } else if (response.type === 'cancelled') {
@@ -95,17 +83,6 @@ export default function AuthScreen() {
             storage.set('google_access_token', tokens.accessToken);
           }
 
-          if (Platform.OS !== 'web' && userInfo.user.id) {
-            try {
-              const { customerInfo } = await Purchases.logIn(userInfo.user.id);
-              if (customerInfo && typeof customerInfo.entitlements.active['Nimo Premium'] !== 'undefined') {
-                router.replace('/(app)');
-                return;
-              }
-            } catch (err) {
-              console.warn('Failed to log in to RevenueCat', err);
-            }
-          }
           
           router.replace('/(app)');
         } else if (explicitResponse.type !== 'cancelled') {
@@ -153,7 +130,7 @@ export default function AuthScreen() {
         <View style={styles.actionContainer}>
           {errorMessage && (
             <View style={styles.errorBanner}>
-              <Feather name="alert-circle" size={16} color="#dc2626" />
+              <AlertCircle size={16} color="#dc2626" />
               <Text style={styles.errorBannerText}>{errorMessage}</Text>
             </View>
           )}
@@ -168,10 +145,7 @@ export default function AuthScreen() {
             {loading ? (
               <ActivityIndicator color="#566434" />
             ) : (
-              <>
-                 <AntDesign name="google" size={18} color="#566434" style={{ marginRight: 8 }} />
                  <Text style={styles.submitBtnText}>Continue with Google</Text>
-              </>
             )}
           </TouchableOpacity>
           

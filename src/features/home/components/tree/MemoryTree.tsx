@@ -1,4 +1,4 @@
-import { Feather, MaterialIcons } from '@expo/vector-icons';
+import { Navigation, ArrowLeft } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import {
@@ -212,7 +212,7 @@ export function MemoryTree({ days, isLoading, onBack, onSelectEmptyDay, themeId 
                   accessibilityLabel="Go back"
                   accessibilityRole="button"
                 >
-                  <MaterialIcons name="arrow-back" size={24} color="#333" />
+                  <ArrowLeft size={24} color="#333" />
                 </TouchableOpacity>
               )}
               <View style={styles.yearPillContainer}>
@@ -382,7 +382,7 @@ export function MemoryTree({ days, isLoading, onBack, onSelectEmptyDay, themeId 
             accessibilityLabel="Jump to Today"
             accessibilityRole="button"
           >
-            <Feather name="navigation" size={14} color="#ffffff" style={{ marginRight: 6 }} />
+            <Navigation size={14} color="#ffffff" style={{ marginRight: 6 }} />
             <Text style={styles.fabText}>Today</Text>
           </TouchableOpacity>
         </Animated.View>

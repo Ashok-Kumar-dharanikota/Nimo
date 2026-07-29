@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, TouchableOpacity, Dimensions } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { Home, FileEdit, Calendar, Settings, Plus } from 'lucide-react-native';
 import { useRouter, usePathname } from 'expo-router';
 import Animated, { 
   useAnimatedStyle, 
@@ -14,10 +14,10 @@ const TAB_BAR_WIDTH = width - 40 - 16 - 65;
 const TAB_ITEM_WIDTH = TAB_BAR_WIDTH / 4;
 
 const TABS = [
-  { name: 'home', icon: 'home', route: '/home' },
-  { name: 'journal', icon: 'edit-document', route: '/journal' },
-  { name: 'calendar', icon: 'calendar-today', route: '/calendar' },
-  { name: 'settings', icon: 'settings', route: '/settings' },
+  { name: 'home', icon: Home, route: '/home' },
+  { name: 'journal', icon: FileEdit, route: '/journal' },
+  { name: 'calendar', icon: Calendar, route: '/calendar' },
+  { name: 'settings', icon: Settings, route: '/settings' },
 ];
 
 export default function FloatingTabBar() {
@@ -86,8 +86,7 @@ export default function FloatingTabBar() {
               onPress={() => handlePress(index, tab.route)}
               className="flex-1 items-center justify-center h-full z-10"
             >
-              <MaterialIcons 
-                name={tab.icon as any} 
+              <tab.icon 
                 size={24} 
                 color={isActive ? '#566434' : '#8c8c8c'} 
               />
@@ -102,7 +101,7 @@ export default function FloatingTabBar() {
         activeOpacity={0.8}
         onPress={() => console.log('Add Moment Triggered')}
       >
-        <MaterialIcons name="add" size={32} color="white" />
+        <Plus size={32} color="white" />
       </TouchableOpacity>
     </View>
   );

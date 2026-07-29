@@ -7,7 +7,7 @@ import {
   saveTheme,
   type GardenThemeId,
 } from '@/features/home/utils/gardenUtils';
-import { Feather } from '@expo/vector-icons';
+import { Droplets, X, Check, Lock } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -43,7 +43,7 @@ export default function GardenScreen() {
           activeOpacity={0.8}
           className="flex-row items-center gap-2 bg-white/80 px-3 py-2 rounded-full border border-[#efe9e1] shadow-sm"
         >
-          <Feather name="droplet" size={14} color={currentTheme.fabColor} />
+          <Droplets size={14} color={currentTheme.fabColor} />
           <Text className="font-jakarta text-[12px] font-semibold" style={{ color: currentTheme.fabColor }}>
             Theme
           </Text>
@@ -69,7 +69,7 @@ export default function GardenScreen() {
                 onPress={() => setThemeModalVisible(false)}
                 className="w-8 h-8 bg-[#f0eee9] rounded-full items-center justify-center"
               >
-                <Feather name="x" size={16} color="#8c7c6c" />
+                <X size={16} color="#8c7c6c" />
               </TouchableOpacity>
             </View>
 
@@ -122,11 +122,11 @@ export default function GardenScreen() {
                         className="w-6 h-6 rounded-full items-center justify-center"
                         style={{ backgroundColor: currentTheme.fabColor }}
                       >
-                        <Feather name="check" size={14} color="white" />
+                        <Check size={14} color="white" />
                       </View>
                     ) : isLocked ? (
                       <View className="flex-row items-center gap-1">
-                        <Feather name="lock" size={14} color="#8c7c6c" />
+                        <Lock size={14} color="#8c7c6c" />
                         <Text className="font-jakarta text-[11px] font-semibold text-[#8c7c6c]">PRO</Text>
                       </View>
                     ) : null}

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { Feather } from '@expo/vector-icons';
+import { ArrowRight, BookOpen } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { formatSQLiteDate } from '../utils/dateUtils';
@@ -35,14 +35,14 @@ export const RecentEntries = ({ entries }: RecentEntriesProps) => {
           }}
         >
           <Text className="font-jakarta text-sm font-semibold text-sage">View All</Text>
-          <Feather name="arrow-right" size={14} color="#A4B47C" />
+          <ArrowRight size={14} color="#A4B47C" />
         </TouchableOpacity>
       </View>
       
       {entries.length === 0 ? (
         <View className="w-auto mx-6 py-10 items-center justify-center bg-surfaceContainer/50 rounded-[32px] border border-outlineVariant/20 border-dashed">
           <View className="w-16 h-16 rounded-full bg-sage/10 items-center justify-center mb-4">
-            <Feather name="book-open" size={24} color="#A4B47C" />
+            <BookOpen size={24} color="#A4B47C" />
           </View>
           <Text className="font-jakarta text-lg font-bold text-primary">No entries yet</Text>
           <Text className="font-jakarta text-sm text-onSurfaceVariant/70 text-center px-10 mt-2 leading-relaxed">

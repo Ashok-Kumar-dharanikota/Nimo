@@ -56,7 +56,6 @@ export const useProfileStore = create<ProfileState>()(
         const { clearLocalDatabase } = require('@/lib/syncEngine');
         const { GoogleOneTapSignIn } = require('react-native-nitro-google-signin');
         const { Platform } = require('react-native');
-        const Purchases = require('react-native-purchases').default;
         
         await clearLocalDatabase();
         
@@ -68,14 +67,6 @@ export const useProfileStore = create<ProfileState>()(
         
         globalStorage.remove('google_access_token');
         
-        if (Platform.OS !== 'web') {
-          try {
-            await Purchases.logOut();
-          } catch (err) {
-            console.warn('Failed to log out of RevenueCat', err);
-          }
-        }
-
         set({ profile: DEFAULTS });
       },
     }),

@@ -10,7 +10,7 @@ import {
 import { CustomModal } from '@/components/ui/CustomModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { Feather, MaterialIcons } from '@expo/vector-icons';
+
 import {
   User,
   Mail,
@@ -28,6 +28,7 @@ import {
   ArrowLeft,
   AlertTriangle,
   Lightbulb,
+  LogOut,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
@@ -170,7 +171,7 @@ export default function Settings() {
             className="flex-row items-center px-4 py-3.5"
           >
             <View className="w-9 h-9 rounded-[12px] bg-[#f0eee9] items-center justify-center mr-3">
-              <Feather name="log-out" size={18} color="#4f453f" />
+              <LogOut size={18} color="#4f453f" />
             </View>
             <Text className="font-jakarta text-[14px] font-medium text-[#27170c] flex-1">
               Sign Out

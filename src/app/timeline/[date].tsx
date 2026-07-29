@@ -2,7 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MaterialIcons, Feather } from '@expo/vector-icons';
+import { ArrowLeft, Wind, PlayCircle } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useHomeData } from '@/features/home/hooks/useHomeData';
 import { formatTime } from '@/features/home/utils/dateUtils';
@@ -43,7 +43,7 @@ export default function TimelineScreen() {
           className="w-10 h-10 rounded-full bg-white items-center justify-center shadow-sm"
           activeOpacity={0.7}
         >
-          <MaterialIcons name="arrow-back" size={24} color="#333" />
+          <ArrowLeft size={24} color="#333" />
         </TouchableOpacity>
         <View className="flex-1 ml-4">
           <Text className="font-playfair text-[20px] font-bold text-[#27170c]">
@@ -62,7 +62,7 @@ export default function TimelineScreen() {
       >
         {todaysFlow.length === 0 && !isLoading ? (
           <View className="items-center justify-center pt-20">
-            <Feather name="wind" size={48} color="#d4c9bc" />
+            <Wind size={48} color="#d4c9bc" />
             <Text className="font-jakarta text-[14px] text-[#8c7c6c] mt-4">
               No moments recorded on this day.
             </Text>
@@ -117,7 +117,7 @@ export default function TimelineScreen() {
                       />
                       {moment.mediaType === 'video' && (
                         <View className="absolute inset-0 items-center justify-center bg-black/20">
-                          <Feather name="play-circle" size={40} color="white" />
+                          <PlayCircle size={40} color="white" />
                         </View>
                       )}
                     </View>

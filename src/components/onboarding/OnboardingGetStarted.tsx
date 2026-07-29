@@ -7,7 +7,7 @@ import Animated, {
   withDelay,
   withSpring,
 } from 'react-native-reanimated';
-import { MaterialIcons } from '@expo/vector-icons';
+import { Mail } from 'lucide-react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -80,7 +80,7 @@ export function OnboardingGetStarted({
           className="w-full rounded-2xl items-center justify-center flex-row gap-3 mb-3"
           style={{ backgroundColor: '#566434', height: 54 }}
         >
-          <MaterialIcons name="email" size={20} color="white" />
+          <Mail size={20} color="white" />
           <Text style={{ color: 'white', fontSize: 15, fontWeight: '600', fontFamily: 'Plus Jakarta Sans' }}>
             Continue with Email
           </Text>

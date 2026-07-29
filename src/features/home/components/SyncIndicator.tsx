@@ -1,6 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, ActivityIndicator, Text } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { CloudOff, CheckCircle, Cloud } from 'lucide-react-native';
 import { useSyncStore } from '@/store/syncStore';
 import { syncDatabase } from '@/lib/syncEngine';
 import * as Haptics from 'expo-haptics';
@@ -31,11 +31,13 @@ export function SyncIndicator() {
       onPress={handleSyncPress}
       className={`h-10 w-10 items-center justify-center rounded-full border border-outlineVariant shadow-sm ${status === 'error' ? 'bg-red-50' : 'bg-surfaceContainerLowest'}`}
     >
-      <Feather
-        name={status === 'error' ? 'cloud-off' : (status === 'success' ? 'check-circle' : 'cloud')}
-        size={18}
-        color={status === 'error' ? '#dc2626' : (status === 'success' ? '#16a34a' : '#4f453f')}
-      />
+      {status === 'error' ? (
+        <CloudOff size={18} color="#dc2626" />
+      ) : status === 'success' ? (
+        <CheckCircle size={18} color="#16a34a" />
+      ) : (
+        <Cloud size={18} color="#4f453f" />
+      )}
     </TouchableOpacity>
   );
 }

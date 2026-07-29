@@ -32,7 +32,6 @@ import { clearLocalDatabase } from '@/lib/syncEngine';
 
 import { useSubscription } from '@/components/SubscriptionProvider';
 import { Sparkles } from 'lucide-react-native';
-import Purchases from 'react-native-purchases';
 import { Platform } from 'react-native';
 import { storage } from '@/lib/storage';
 import { GoogleOneTapSignIn } from 'react-native-nitro-google-signin';
@@ -75,13 +74,7 @@ export function ProfileScreen() {
     
     storage.remove('google_access_token');
 
-    if (Platform.OS !== 'web') {
-      try {
-        await Purchases.logOut();
-      } catch (err) {
-        console.warn('Failed to log out of RevenueCat', err);
-      }
-    }
+
     setIsSignedIn(false);
     updateProfile({ email: '', name: 'Guest', avatarUri: null });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

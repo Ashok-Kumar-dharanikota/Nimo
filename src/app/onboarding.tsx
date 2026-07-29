@@ -21,7 +21,7 @@ import Animated, {
   interpolate,
   Extrapolation,
 } from 'react-native-reanimated';
-import { MaterialIcons } from '@expo/vector-icons';
+import { ArrowRight } from 'lucide-react-native';
 import { useNotificationScheduler } from '@/hooks/useNotificationScheduler';
 
 import { SlideIndicators } from '@/components/onboarding/SlideIndicators';
@@ -187,7 +187,7 @@ export default function Onboarding() {
               activeOpacity={0.85}
               style={styles.nextBtn}
             >
-              <MaterialIcons name="arrow-forward" size={22} color="white" />
+              <ArrowRight size={22} color="white" />
             </TouchableOpacity>
           </Animated.View>
         </View>

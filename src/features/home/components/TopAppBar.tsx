@@ -1,5 +1,4 @@
-import { Feather, MaterialIcons } from "@expo/vector-icons";
-import { Gem } from "lucide-react-native";
+import { Gem, Flame } from "lucide-react-native";
 import { Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
 import { calculateStreak } from "../utils/dateUtils";
@@ -52,8 +51,7 @@ export function TopAppBar({ moments = [] }: TopAppBarProps) {
         
         {/* Streak indicator */}
         <View className="flex-row items-center gap-1 bg-surfaceContainer px-3 py-1.5 rounded-full border border-outlineVariant/20">
-          <MaterialIcons
-            name="local-fire-department"
+          <Flame
             size={18}
             color={streak > 0 ? "#E67E22" : "#8c7c6c"}
           />

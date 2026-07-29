@@ -4,14 +4,11 @@ import { useProfileStore } from '@/features/profile/hooks/useProfileStore';
 import { setupExecutorch } from '@/lib/executorch';
 import { ragService } from '@/lib/ragService';
 import { storage } from '@/lib/storage';
-import { Feather } from '@expo/vector-icons';
-import * as Device from 'expo-device';
-import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
 import {
   AlertCircle,
   ArrowLeft,
   Bot,
+  Check,
   Cpu,
   Download,
   Send,
@@ -19,6 +16,9 @@ import {
   Sparkles,
   Star
 } from 'lucide-react-native';
+import * as Device from 'expo-device';
+import * as Haptics from 'expo-haptics';
+import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -243,7 +243,7 @@ function ModelCard({ model, isSelected, onSelect }: {
 
         <View className={`w-6 h-6 rounded-full border-2 items-center justify-center ${isSelected ? 'border-[#566434] bg-[#566434]' : 'border-[#d2c4bc]'
           }`}>
-          {isSelected && <Feather name="check" size={14} color="#fff" />}
+          {isSelected && <Check size={14} color="#fff" />}
         </View>
       </View>
 
