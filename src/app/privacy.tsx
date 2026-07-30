@@ -30,7 +30,7 @@ export default function PrivacyPolicyNative() {
           Privacy Policy
         </Text>
         <Text className="font-jakarta text-[13px] text-onSurfaceVariant/60 mb-6">
-          Last Updated: July 5, 2026
+          Last Updated: July 30, 2026
         </Text>
 
         <View className="bg-surfaceContainerLow rounded-[20px] p-5 border border-surfaceVariant mb-6">
@@ -47,20 +47,29 @@ export default function PrivacyPolicyNative() {
             <Text className="font-jakarta text-[18px] font-bold text-primary mb-2">
               1. Information We Collect
             </Text>
+            <Text className="font-jakarta text-[14px] leading-[22px] text-onSurfaceVariant mb-2">
+              Nimo offers an optional Google Sign-In feature to personalize your experience and facilitate personal cloud backups (like Google Drive). When you sign in, we receive your basic profile information (name, email address, and profile picture).
+            </Text>
+            <Text className="font-jakarta text-[14px] leading-[22px] text-primary font-semibold mb-2">
+              Crucially, this information is only stored locally on your device. We do not transmit, collect, or store this personal information on our remote servers.
+            </Text>
             <Text className="font-jakarta text-[14px] leading-[22px] text-onSurfaceVariant">
-              Because Nimo runs fully locally on your device, we do not require you to create an account, register, or provide an email address. We do not collect or store any of your private reflections or journaling behavior.
+              If you choose not to sign in, we do not collect any personal information. In all cases, your journal entries and reflections stay solely in your local database.
             </Text>
           </View>
 
           <View>
             <Text className="font-jakarta text-[18px] font-bold text-primary mb-2">
-              2. Local Storage
+              2. Local Storage & AI Processing
             </Text>
-            <Text className="font-jakarta text-[14px] leading-[22px] text-onSurfaceVariant">
+            <Text className="font-jakarta text-[14px] leading-[22px] text-onSurfaceVariant mb-2">
               Your data is stored securely using local on-device database systems (SQLite and MMKV). This data can only be accessed through the Nimo application on your physical device.
             </Text>
+            <Text className="font-jakarta text-[14px] leading-[22px] text-onSurfaceVariant">
+              <Text className="font-bold text-primary">Local AI Guarantee:</Text> All AI features (including natural language chat and semantic search) process your journal entries entirely on your local device. Your private data is never sent to external AI servers (like OpenAI or Anthropic).
+            </Text>
             <Text className="font-jakarta text-[14px] leading-[22px] text-primary font-semibold mt-2">
-              Important: If you delete Nimo from your device, all of your saved entries will be permanently lost, as we do not keep backups on our servers.
+              Important: If you delete Nimo from your device without setting up personal cloud backups, all of your saved entries will be permanently lost, as we do not keep backups on our servers.
             </Text>
           </View>
 
@@ -78,7 +87,7 @@ export default function PrivacyPolicyNative() {
               4. Contact Us
             </Text>
             <Text className="font-jakarta text-[14px] leading-[22px] text-onSurfaceVariant">
-              If you have any questions or feedback regarding this Privacy Policy, feel free to contact us at privacy@nimo.app.
+              If you have any questions or feedback regarding this Privacy Policy, feel free to contact us at ashok.d.paul@gmail.com.
             </Text>
           </View>
         </View>

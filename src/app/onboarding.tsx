@@ -40,7 +40,7 @@ const FEATURE_SLIDES = [
     title: 'Nimos protect\nyour memories',
     titleHighlight: null,
     description: 'We keep your precious moments safe, private and secure.',
-    characterSource: require('@/assets/images/nimo/nimo_protect.png'),
+    characterSource: require('@/assets/images/nimo/nimo_protect.jpg'),
   },
   {
     id: 'capture',
@@ -49,7 +49,7 @@ const FEATURE_SLIDES = [
     title: 'Capture anything,\nremember everything',
     titleHighlight: null,
     description: 'Photos, videos, notes, voice or places – Nimo remembers it all.',
-    characterSource: require('@/assets/images/nimo/nimo_capture.png'),
+    characterSource: require('@/assets/images/nimo/nimo_capture.jpg'),
   },
   {
     id: 'relive',
@@ -58,7 +58,7 @@ const FEATURE_SLIDES = [
     title: 'Relive. Reflect.\nGrow.',
     titleHighlight: null,
     description: 'Nimo helps you look back, understand and grow with your memories.',
-    characterSource: require('@/assets/images/nimo/nimo_relive.png'),
+    characterSource: require('@/assets/images/nimo/nimo_relive.jpg'),
   },
   {
     id: 'notifications',
@@ -67,7 +67,7 @@ const FEATURE_SLIDES = [
     title: 'Stay on track',
     titleHighlight: null,
     description: 'Enable notifications to remember to record your moments and daily tasks.',
-    characterSource: require('@/assets/images/nimo/nimo_welcome.png'),
+    characterSource: require('@/assets/images/nimo/nimo_welcome.jpg'),
   },
 ];
 
@@ -219,7 +219,7 @@ function WelcomeSlide({ isActive, scrollX }: { isActive: boolean; scrollX: any }
       {/* Character fills most of the screen */}
       <Animated.View style={[styles.welcomeCharContainer, characterStyle]}>
         <Image
-          source={require('@/assets/images/nimo/nimo_welcome.png')}
+          source={require('@/assets/images/nimo/nimo_welcome.jpg')}
           style={styles.welcomeCharImage}
           contentFit="contain"
         />

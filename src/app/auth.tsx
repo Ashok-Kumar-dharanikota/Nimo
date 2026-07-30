@@ -20,6 +20,16 @@ GoogleOneTapSignIn.configure({
   webClientId: '200516238326-7m06gdstgbgu6unpt0m4j34nr9113v0l.apps.googleusercontent.com',
 });
 
+const ADJECTIVES = ['Cosmic', 'Starlight', 'Curious', 'Silent', 'Gentle', 'Cozy', 'Noble', 'Brave', 'Serene', 'Wandering'];
+const NOUNS = ['Voyager', 'Explorer', 'Dreamer', 'Observer', 'Traveler', 'Seeker', 'Panda', 'Owl', 'Scholar', 'Artist'];
+
+function generateRandomGuestName(): string {
+  const adj = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
+  const noun = NOUNS[Math.floor(Math.random() * NOUNS.length)];
+  const num = Math.floor(1000 + Math.random() * 9000);
+  return `${adj} ${noun} #${num}`;
+}
+
 export default function AuthScreen() {
   const router = useRouter();
   const updateProfile = useProfileStore((state) => state.updateProfile);
@@ -50,7 +60,9 @@ export default function AuthScreen() {
           email: userInfo.user.email || '',
           name: userInfo.user.name || (userInfo.user.email ? userInfo.user.email.split('@')[0] : 'User'),
           avatarUri: userInfo.user.photo || null,
+          isGuest: false,
         });
+        storage.remove('is_guest');
 
         const tokens = await GoogleOneTapSignIn.getTokens();
         if (tokens.accessToken) {
@@ -76,7 +88,9 @@ export default function AuthScreen() {
             email: userInfo.user.email || '',
             name: userInfo.user.name || (userInfo.user.email ? userInfo.user.email.split('@')[0] : 'User'),
             avatarUri: userInfo.user.photo || null,
+            isGuest: false,
           });
+          storage.remove('is_guest');
 
           const tokens = await GoogleOneTapSignIn.getTokens();
           if (tokens.accessToken) {
@@ -97,6 +111,20 @@ export default function AuthScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGuestSignIn = () => {
+    const guestName = generateRandomGuestName();
+    updateProfile({
+      name: guestName,
+      email: '',
+      avatarUri: null,
+      isGuest: true,
+    });
+    storage.set('is_guest', true);
+    storage.remove('google_access_token');
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    router.replace('/(app)');
   };
 
   return (
@@ -147,6 +175,16 @@ export default function AuthScreen() {
             ) : (
                  <Text style={styles.submitBtnText}>Continue with Google</Text>
             )}
+          </TouchableOpacity>
+
+          {/* Guest Button */}
+          <TouchableOpacity
+            onPress={handleGuestSignIn}
+            disabled={loading}
+            activeOpacity={0.85}
+            style={styles.guestBtn}
+          >
+            <Text style={styles.guestBtnText}>Join as Guest User</Text>
           </TouchableOpacity>
           
           <Text style={styles.disclaimerText}>
@@ -235,6 +273,23 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   submitBtnText: {
+    color: '#566434',
+    fontSize: 16,
+    fontWeight: '700',
+    fontFamily: 'Plus Jakarta Sans',
+  },
+  guestBtn: {
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: '#566434',
+    height: 54,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    marginTop: 12,
+  },
+  guestBtnText: {
     color: '#566434',
     fontSize: 16,
     fontWeight: '700',

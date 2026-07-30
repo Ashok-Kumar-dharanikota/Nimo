@@ -25,6 +25,7 @@ export type ProfileData = {
   theme: 'light' | 'dark' | 'system';
   dailyReminderEnabled: boolean;
   reminderTime: string; // HH:mm
+  isGuest?: boolean;
 };
 
 interface ProfileState {
@@ -41,6 +42,7 @@ const DEFAULTS: ProfileData = {
   theme: 'light',
   dailyReminderEnabled: false,
   reminderTime: '20:00',
+  isGuest: false,
 };
 
 export const useProfileStore = create<ProfileState>()(
@@ -66,6 +68,7 @@ export const useProfileStore = create<ProfileState>()(
         }
         
         globalStorage.remove('google_access_token');
+        globalStorage.remove('is_guest');
         
         set({ profile: DEFAULTS });
       },

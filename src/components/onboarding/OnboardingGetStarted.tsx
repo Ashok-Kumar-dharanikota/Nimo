@@ -52,7 +52,7 @@ export function OnboardingGetStarted({
         style={[{ flex: 1, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 16 }, characterStyle]}
       >
         <Image
-          source={require('@/assets/images/nimo/nimo_getstarted.png')}
+          source={require('@/assets/images/nimo/nimo_getstarted.jpg')}
           style={{ width: SCREEN_WIDTH * 0.72, height: SCREEN_WIDTH * 0.72 }}
           contentFit="contain"
         />

@@ -55,7 +55,7 @@ export const calculateStreak = (moments: Array<{ createdAt: string }>) => {
   // Get unique date strings (YYYY-MM-DD)
   const uniqueDates = new Set(
     moments.map(m => {
-      const utcDate = new Date(m.createdAt.replace(' ', 'T') + 'Z');
+      const utcDate = parseSQLiteDate(m.createdAt);
       return formatDateForSQLite(utcDate);
     })
   );

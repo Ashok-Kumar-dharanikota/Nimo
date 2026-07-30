@@ -9,7 +9,7 @@ export default function TermsOfServiceWeb() {
           Terms of Service
         </h1>
         <p className="font-jakarta text-[14px] text-onSurfaceVariant/60">
-          Last Updated: July 5, 2026
+          Last Updated: July 30, 2026
         </p>
       </header>
 
@@ -34,9 +34,18 @@ export default function TermsOfServiceWeb() {
             All data created, recorded, or inputted by you in Nimo (including journal entries, streak dates, intentions) is stored locally on your device. We do not own, access, or control this data.
           </p>
           <div className="bg-surfaceContainerLow border border-outlineVariant/40 rounded-2xl p-6 mb-6">
+            <h3 className="text-primary font-semibold text-[18px] mb-2">Google Sign-In & AI Features</h3>
+            <p className="text-[15px] text-onSurfaceVariant mb-3">
+              If you choose to use Google Sign-In, your basic profile information is saved securely on your device for personalizing your experience and enabling future personal cloud backups. We do not collect this on our servers.
+            </p>
+            <p className="text-[15px] text-onSurfaceVariant">
+              Additionally, all Artificial Intelligence (AI) features (like chat and semantic search) are executed locally on your device using on-device models. Your journal entries are never sent to third-party AI services.
+            </p>
+          </div>
+          <div className="bg-surfaceContainerLow border border-outlineVariant/40 rounded-2xl p-6 mb-6">
             <h3 className="text-primary font-semibold text-[18px] mb-2">No Cloud Recovery</h3>
             <p className="text-[15px] text-onSurfaceVariant">
-              Since we do not store your data on our servers, we have no way to recover your data if your device is lost, stolen, damaged, or if the Nimo app is uninstalled. You are solely responsible for managing and safeguarding your device and data.
+              Since we do not store your data on our servers, we have no way to recover your data if your device is lost, stolen, damaged, or if the Nimo app is uninstalled (unless you have explicitly configured a personal cloud backup). You are solely responsible for managing and safeguarding your device and data.
             </p>
           </div>
         </div>
@@ -66,7 +75,7 @@ export default function TermsOfServiceWeb() {
           <h2 className="text-primary font-bold text-[22px] mb-3 tracking-tight">7. Contact Information</h2>
           <p>
             If you have any questions about these Terms, please contact us at{' '}
-            <span className="text-sage font-semibold">terms@nimo.app</span>.
+            <span className="text-sage font-semibold">ashok.d.paul@gmail.com</span>.
           </p>
         </div>
       </section>

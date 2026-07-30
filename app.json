@@ -5,7 +5,9 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "updates": {
-      "url": "https://u.expo.dev/e963b477-ea1d-47a4-88ff-03bc1b408911"
+      "url": "https://u.expo.dev/e963b477-ea1d-47a4-88ff-03bc1b408911",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
     },
     "runtimeVersion": {
       "policy": "appVersion"
@@ -44,6 +46,7 @@
       "expo-sqlite",
       "expo-video",
       "expo-notifications",
+      "expo-updates",
       "react-native-nitro-google-signin"
     ],
     "experiments": {

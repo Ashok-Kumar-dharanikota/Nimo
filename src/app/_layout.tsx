@@ -1,22 +1,21 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import { Stack } from 'expo-router';
-import { useColorScheme, View, Text } from 'react-native';
-import { useFonts, PlusJakartaSans_400Regular, PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold } from '@expo-google-fonts/plus-jakarta-sans';
 import { PlayfairDisplay_600SemiBold, PlayfairDisplay_700Bold } from '@expo-google-fonts/playfair-display';
+import { PlusJakartaSans_400Regular, PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold, useFonts } from '@expo-google-fonts/plus-jakarta-sans';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { Text, useColorScheme, View } from 'react-native';
 
 import '../../global.css';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { StatusBar } from 'expo-status-bar';
 
-import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
-import migrations from '@/db/migrations/migrations';
-import { db } from '@/db';
-import { setupExecutorch } from '@/lib/executorch';
-import { SubscriptionProvider } from '@/components/SubscriptionProvider';
 import { GlobalDialog } from '@/components/GlobalDialog';
+import { SubscriptionProvider } from '@/components/SubscriptionProvider';
+import { db } from '@/db';
+import migrations from '@/db/migrations/migrations';
+import { setupExecutorch } from '@/lib/executorch';
 import { PortalHost } from '@rn-primitives/portal';
+import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 // Initialize ExecuTorch resource fetcher for on-device models
@@ -27,10 +26,13 @@ const queryClient = new QueryClient();
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 
+import { useAppUpdates } from '@/hooks/useAppUpdates';
+
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
 
 export default function TabLayout() {
+  useAppUpdates();
   const colorScheme = useColorScheme();
   const [fontsLoaded] = useFonts({
     'Plus Jakarta Sans': PlusJakartaSans_400Regular,

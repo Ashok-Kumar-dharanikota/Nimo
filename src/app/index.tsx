@@ -3,6 +3,7 @@ import { storage } from '@/lib/storage';
 import { useEffect, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { GoogleOneTapSignIn } from 'react-native-nitro-google-signin';
+import { useProfileStore } from '@/features/profile/hooks/useProfileStore';
 
 export default function Index() {
   const [sessionChecked, setSessionChecked] = useState(false);
@@ -11,9 +12,11 @@ export default function Index() {
 
   useEffect(() => {
     const initAuth = async () => {
-      // Check if access token exists in storage
+      // Check if access token or guest session exists in storage
       const token = storage.getString('google_access_token');
-      if (token) {
+      const isGuestStored = storage.getBoolean('is_guest');
+      const isGuestProfile = useProfileStore.getState().profile.isGuest;
+      if (token || isGuestStored || isGuestProfile) {
         setIsSignedIn(true);
       }
       setSessionChecked(true);

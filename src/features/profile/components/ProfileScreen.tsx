@@ -154,9 +154,12 @@ export function ProfileScreen() {
           {profile.email ? (
             <Text className="font-jakarta text-[13px] text-[#8c7c6c]">{profile.email}</Text>
           ) : (
-            <TouchableOpacity onPress={() => router.push('/auth')}>
-              <Text className="font-jakarta text-[13px] text-[#566434] underline">Sign in / Add email</Text>
-            </TouchableOpacity>
+            <View className="items-center mt-1">
+              <Text className="font-jakarta text-[13px] text-[#a89a8b]">No email linked</Text>
+              <TouchableOpacity onPress={() => router.push('/auth')} activeOpacity={0.7} className="mt-1">
+                <Text className="font-jakarta text-[12px] text-[#566434] font-semibold underline">Link Google Account</Text>
+              </TouchableOpacity>
+            </View>
           )}
 
           <Text className="font-jakarta text-[11px] text-[#a89a8b] mt-1">
@@ -191,7 +194,7 @@ export function ProfileScreen() {
           <Text className="font-jakarta text-[11px] font-bold tracking-wider text-[#a89a8b] uppercase mb-2 px-1">
             Account
           </Text>
-          <View className="bg-white rounded-[20px] border border-[#efe9e1] overflow-hidden mb-5">
+          <View className="bg-[#ffffff] rounded-[20px] border border-[#efe9e1] overflow-hidden mb-5">
             {!isPremium && (
               <>
                 <MenuItem
@@ -216,9 +219,9 @@ export function ProfileScreen() {
             <MenuItem
               icon={Mail}
               label="Email"
-              value={profile.email || 'Not set'}
+              value={profile.email || 'No email linked'}
               onPress={() => {
-                if (!isSignedIn) {
+                if (!profile.email) {
                   router.push('/auth');
                 } else {
                   setInfoModalConfig({
@@ -230,21 +233,23 @@ export function ProfileScreen() {
               }}
             />
             <View className="h-[1px] bg-[#efe9e1] mx-4" />
-            {isSignedIn ? (
-              <MenuItem
-                icon={LogOut}
-                label="Sign Out"
-                value=""
-                onPress={() => setSignOutModalVisible(true)}
-              />
-            ) : (
-              <MenuItem
-                icon={LogIn}
-                label="Sign In / Sign Up"
-                value=""
-                onPress={() => router.push('/auth')}
-              />
-            )}
+            {!profile.email ? (
+              <>
+                <MenuItem
+                  icon={LogIn}
+                  label="Link Google Account"
+                  value=""
+                  onPress={() => router.push('/auth')}
+                />
+                <View className="h-[1px] bg-[#efe9e1] mx-4" />
+              </>
+            ) : null}
+            <MenuItem
+              icon={LogOut}
+              label="Sign Out"
+              value=""
+              onPress={() => setSignOutModalVisible(true)}
+            />
           </View>
 
           {/* Quick Links */}
