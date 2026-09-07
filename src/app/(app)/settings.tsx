@@ -7,6 +7,7 @@ import {
   Switch,
   Linking,
 } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
 import { CustomModal } from '@/components/ui/CustomModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -29,10 +30,19 @@ import {
   AlertTriangle,
   Lightbulb,
   LogOut,
+  LogIn,
+  Sparkles,
+  RotateCcw,
+  Flame,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useProfileStore, type ProfileData } from '@/features/profile/hooks/useProfileStore';
+import {
+  seedDemoMomentsForScreenshots,
+  clearDemoMomentsForScreenshots,
+  getDemoSeedStatus,
+} from '@/features/home/services/demoMomentsService';
 
 function SettingsSection({ title, children, delay = 0 }: { title: string; children: React.ReactNode; delay?: number }) {
   return (
@@ -107,12 +117,57 @@ export default function Settings() {
     updateProfile({ theme: next });
   };
 
+  const queryClient = useQueryClient();
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [infoModal, setInfoModal] = useState<{ visible: boolean; title: string; message: string }>({
     visible: false,
     title: '',
     message: '',
   });
+
+  const [demoStatus, setDemoStatus] = useState<{ isSeeded: boolean; momentCount: number }>({
+    isSeeded: false,
+    momentCount: 0,
+  });
+  const [isDemoLoading, setIsDemoLoading] = useState(false);
+
+  React.useEffect(() => {
+    getDemoSeedStatus().then(setDemoStatus);
+  }, []);
+
+  const handleSeedDemo = async () => {
+    setIsDemoLoading(true);
+    try {
+      const count = await seedDemoMomentsForScreenshots();
+      const status = await getDemoSeedStatus();
+      setDemoStatus(status);
+      queryClient.invalidateQueries();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      showInfo('Demo Data Loaded', `Successfully added ${count} demo moments across 15 consecutive days! Your streak and timeline are now populated for Play Store screenshots.`);
+    } catch (err) {
+      console.error(err);
+      showInfo('Error', 'Failed to seed demo screenshot data.');
+    } finally {
+      setIsDemoLoading(false);
+    }
+  };
+
+  const handleClearDemo = async () => {
+    setIsDemoLoading(true);
+    try {
+      await clearDemoMomentsForScreenshots();
+      const status = await getDemoSeedStatus();
+      setDemoStatus(status);
+      queryClient.invalidateQueries();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      showInfo('Demo Data Cleared', 'All screenshot demo moments have been removed.');
+    } catch (err) {
+      console.error(err);
+      showInfo('Error', 'Failed to clear demo data.');
+    } finally {
+      setIsDemoLoading(false);
+    }
+  };
 
   const showInfo = (title: string, message: string) => {
     setInfoModal({ visible: true, title, message });
@@ -161,22 +216,30 @@ export default function Settings() {
             value={profile.email || 'Not set'}
           />
           <Divider />
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={async () => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              await signOut();
-              router.replace('/auth');
-            }}
-            className="flex-row items-center px-4 py-3.5"
-          >
-            <View className="w-9 h-9 rounded-[12px] bg-[#f0eee9] items-center justify-center mr-3">
-              <LogOut size={18} color="#4f453f" />
-            </View>
-            <Text className="font-jakarta text-[14px] font-medium text-[#27170c] flex-1">
-              Sign Out
-            </Text>
-          </TouchableOpacity>
+          {profile.isGuest || !profile.email ? (
+            <SettingsRow
+              icon={LogIn}
+              label="Link Google Account"
+              onPress={() => router.push('/auth')}
+            />
+          ) : (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={async () => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                await signOut();
+                router.replace('/auth');
+              }}
+              className="flex-row items-center px-4 py-3.5"
+            >
+              <View className="w-9 h-9 rounded-[12px] bg-[#f0eee9] items-center justify-center mr-3">
+                <LogOut size={18} color="#4f453f" />
+              </View>
+              <Text className="font-jakarta text-[14px] font-medium text-[#27170c] flex-1">
+                Sign Out
+              </Text>
+            </TouchableOpacity>
+          )}
         </SettingsSection>
 
         {/* Appearance */}
@@ -241,6 +304,33 @@ export default function Settings() {
               Linking.openURL('mailto:support@nimo.com?subject=Nimo%20Feature%20Request&body=Hi%20Nimo%20Team%2C%0A%0AI%20would%20love%20to%20see%20this%20feature%3A%0A%0A');
             }}
           />
+        </SettingsSection>
+
+        {/* Play Store Screenshots Demo Data */}
+        <SettingsSection title="Play Store Screenshots" delay={280}>
+          <SettingsRow
+            icon={Sparkles}
+            label={demoStatus.isSeeded ? `Loaded (${demoStatus.momentCount} Demo Moments)` : 'Load Demo Moments & 15-Day Streak'}
+            value={demoStatus.isSeeded ? 'Active Streak' : 'Tap to Seed'}
+            onPress={isDemoLoading ? undefined : handleSeedDemo}
+          />
+          {demoStatus.isSeeded && (
+            <>
+              <Divider />
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={isDemoLoading ? undefined : handleClearDemo}
+                className="flex-row items-center px-4 py-3.5"
+              >
+                <View className="w-9 h-9 rounded-[12px] bg-[#f0eee9] items-center justify-center mr-3">
+                  <RotateCcw size={18} color="#8c7c6c" />
+                </View>
+                <Text className="font-jakarta text-[14px] font-medium text-[#8c7c6c] flex-1">
+                  Clear Screenshot Demo Data
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
         </SettingsSection>
 
         {/* Danger Zone */}

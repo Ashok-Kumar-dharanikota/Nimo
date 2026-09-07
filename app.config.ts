@@ -2,19 +2,69 @@ import { ExpoConfig, ConfigContext } from 'expo/config';
 
 export default ({ config }: ConfigContext): ExpoConfig => {
   const IS_DEV = process.env.APP_VARIANT === 'development';
-  const basePackage = config.android?.package || 'com.cornerstonestudio.nimoai';
-  const baseBundleId = config.ios?.bundleIdentifier || 'com.cornerstonestudio.nimoai';
 
   return {
     ...config,
-    name: IS_DEV ? `${config.name} (Dev)` : config.name,
-    android: {
-      ...config.android,
-      package: IS_DEV ? `${basePackage}.dev` : basePackage,
+    name: IS_DEV ? 'Nimo - Life Journal (Dev)' : 'Nimo - Life Journal',
+    slug: 'Nimo',
+    version: '1.0.0',
+    orientation: 'portrait',
+    updates: {
+      url: 'https://u.expo.dev/e963b477-ea1d-47a4-88ff-03bc1b408911',
+      checkAutomatically: 'ON_LOAD',
+      fallbackToCacheTimeout: 0,
     },
+    runtimeVersion: {
+      policy: 'appVersion',
+    },
+    icon: './assets/images/nimo/nimo_logo.png',
+    scheme: 'nimo',
+    userInterfaceStyle: 'light',
     ios: {
-      ...config.ios,
-      bundleIdentifier: IS_DEV ? `${baseBundleId}.dev` : baseBundleId,
+      icon: './assets/images/nimo/nimo_logo.png',
+      bundleIdentifier: IS_DEV ? 'com.cornerstonestudio.nimoai.dev' : 'com.cornerstonestudio.nimoai',
     },
-  } as ExpoConfig;
+    android: {
+      adaptiveIcon: {
+        backgroundColor: '#fbf9f4',
+        foregroundImage: './assets/images/nimo/nimo_logo.png',
+      },
+      predictiveBackGestureEnabled: false,
+      package: IS_DEV ? 'com.cornerstonestudio.nimoai.dev' : 'com.cornerstonestudio.nimoai',
+      googleServicesFile: './google-services.json',
+    },
+    web: {
+      output: 'static',
+      favicon: './assets/images/favicon.png',
+    },
+    plugins: [
+      'expo-router',
+      [
+        'expo-splash-screen',
+        {
+          backgroundColor: '#fbf9f4',
+          android: {
+            image: './assets/images/nimo/nimo_logo.png',
+            imageWidth: 120,
+          },
+        },
+      ],
+      'expo-sqlite',
+      'expo-video',
+      'expo-notifications',
+      'expo-updates',
+      'react-native-nitro-google-signin',
+    ],
+    experiments: {
+      typedRoutes: true,
+      reactCompiler: true,
+    },
+    extra: {
+      router: {},
+      eas: {
+        projectId: 'e963b477-ea1d-47a4-88ff-03bc1b408911',
+      },
+    },
+    owner: 'ashokkumard',
+  };
 };

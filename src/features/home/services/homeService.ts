@@ -1,7 +1,6 @@
 import { db } from '@/db';
 import { journal, moment } from '@/db/schema';
 import { ragService } from '@/lib/ragService';
-import { supabase } from '@/utils/supabase';
 import { and, count, desc, eq, isNull, sql } from 'drizzle-orm';
 import { formatDateForSQLite } from '../utils/dateUtils';
 
@@ -83,79 +82,45 @@ export const getTodaysFlow = async (targetDate: Date = new Date()): Promise<Mome
     isDraft: Boolean(row.isDraft),
   }));
 
-  // Fetch from supabase if not today and empty locally
-  if (mappedResult.length === 0 && !isToday) {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user) {
-      const { data, error } = await supabase.from('moment').select('*').eq('user_id', session.user.id).like('created_at', `${targetDateStr}%`);
-      if (data && data.length > 0) {
-        return data.map((row: any) => ({
-          id: row.local_id || -Math.floor(Math.random() * 1000000), // temp ID
-          content: row.content,
-          createdAt: row.created_at,
-          journalTitle: 'Synced Journal',
-          emotion: row.emotion,
-          title: row.title,
-          mediaUri: row.media_uri,
-          mediaType: row.media_type,
-          isDraft: row.is_draft,
-        }));
-      }
-    }
-  }
-
   // If there are no moments today, check if it's a brand new user
   if (mappedResult.length === 0 && isToday) {
     const totalMoments = await db.select({ value: count(moment.id) }).from(moment);
     if ((totalMoments[0]?.value ?? 0) === 0) {
-      const { data: { session } } = await supabase.auth.getSession();
-      const createdAtStr = session?.user?.created_at;
-      if (createdAtStr) {
-        const createdDate = new Date(createdAtStr);
-        const today = new Date();
-        // If account was created today
-        if (
-          createdDate.getFullYear() === today.getFullYear() &&
-          createdDate.getMonth() === today.getMonth() &&
-          createdDate.getDate() === today.getDate()
-        ) {
-          mappedResult.push(
-            {
-              id: -1,
-              content: 'Every thought, photo, or reflection you save here grows a leaf in your Memory Garden. Take a breath and reflect anytime.',
-              createdAt: new Date().toISOString(),
-              journalTitle: 'Quick Thoughts',
-              emotion: 'inspired',
-              title: '🌱 Welcome to Nimo! Your personal memory garden',
-              mediaUri: null,
-              mediaType: null,
-              isDraft: false,
-            },
-            {
-              id: -2,
-              content: 'Your memories stay safe on your device using local SQLite and MMKV storage. You have full control and total privacy.',
-              createdAt: new Date().toISOString(),
-              journalTitle: 'Quick Thoughts',
-              emotion: 'calm',
-              title: '🛡️ Private & Protected',
-              mediaUri: null,
-              mediaType: null,
-              isDraft: false,
-            },
-            {
-              id: -3,
-              content: 'Tap the floating "+" button at the bottom anytime to add a moment directly to your timeline. You can save as draft or plant it right away!',
-              createdAt: new Date().toISOString(),
-              journalTitle: 'Quick Thoughts',
-              emotion: 'happy',
-              title: '✨ How to Capture Moments',
-              mediaUri: null,
-              mediaType: null,
-              isDraft: false,
-            }
-          );
+      mappedResult.push(
+        {
+          id: -1,
+          content: 'Every thought, photo, or reflection you save here grows a leaf in your Memory Garden. Take a breath and reflect anytime.',
+          createdAt: new Date().toISOString(),
+          journalTitle: 'Quick Thoughts',
+          emotion: 'inspired',
+          title: '🌱 Welcome to Nimo! Your personal memory garden',
+          mediaUri: null,
+          mediaType: null,
+          isDraft: false,
+        },
+        {
+          id: -2,
+          content: 'Your memories stay safe on your device using local SQLite and MMKV storage. You have full control and total privacy.',
+          createdAt: new Date().toISOString(),
+          journalTitle: 'Quick Thoughts',
+          emotion: 'calm',
+          title: '🛡️ Private & Protected',
+          mediaUri: null,
+          mediaType: null,
+          isDraft: false,
+        },
+        {
+          id: -3,
+          content: 'Tap the floating "+" button at the bottom anytime to add a moment directly to your timeline. You can save as draft or plant it right away!',
+          createdAt: new Date().toISOString(),
+          journalTitle: 'Quick Thoughts',
+          emotion: 'happy',
+          title: '✨ How to Capture Moments',
+          mediaUri: null,
+          mediaType: null,
+          isDraft: false,
         }
-      }
+      );
     }
   }
 

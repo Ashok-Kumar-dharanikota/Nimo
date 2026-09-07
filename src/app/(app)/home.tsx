@@ -9,9 +9,9 @@ import { ensureStarterMomentsIfNewUser } from '@/features/home/services/seedMome
 import { ProfileScreen } from '@/features/profile/components/ProfileScreen';
 import { draftStore, useDraftStore } from '@/store/draftStore';
 import * as Haptics from 'expo-haptics';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { ArrowRight } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Image,
   RefreshControl,
@@ -50,6 +50,12 @@ export default function Home() {
       refetch();
     });
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch])
+  );
 
   useEffect(() => {
     if (params.create === 'true' || params.action === 'create') {

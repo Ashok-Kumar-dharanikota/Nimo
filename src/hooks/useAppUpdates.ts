@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { Alert } from 'react-native';
 
 export function useAppUpdates() {
   useEffect(() => {
@@ -20,19 +19,7 @@ export function useAppUpdates() {
         const update = await Updates.checkForUpdateAsync();
         if (update.isAvailable) {
           await Updates.fetchUpdateAsync();
-          Alert.alert(
-            'Update Available',
-            'A new version of Nimo is ready. Restart now to apply the latest features?',
-            [
-              { text: 'Later', style: 'cancel' },
-              {
-                text: 'Restart',
-                onPress: async () => {
-                  await Updates.reloadAsync();
-                },
-              },
-            ]
-          );
+          await Updates.reloadAsync();
         }
       } catch (error) {
         // Safely ignore if native module ExpoUpdates is missing in current environment

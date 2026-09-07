@@ -8,19 +8,18 @@ export const Header = () => {
   return (
     <header className="sticky top-0 z-50 bg-transparent backdrop-blur-md border-b border-black/5">
       <div className="max-w-6xl mx-auto h-16 flex items-center justify-between relative">
-        <Link href="/" className="flex items-center group pl-5">
+        <Link href="/" className="flex items-center gap-3 group pl-5">
           <div className="flex flex-row items-center transition-all duration-300">
             <img
               src={require('../../assets/images/nimo/nimo_logo.png')}
               className="h-12 w-auto object-cover"
               alt="Nimo Logo"
             />
-            {/* <img
-              src={require('../../assets/images/nimo/brand_name.png')}
-              className=" h-7 w-32 object-contain -ml-3"
-              alt="Nimo"
-            /> */}
           </div>
+          <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#8CA898]/15 text-[#4E5F45] border border-[#8CA898]/30">
+            <span className="w-2 h-2 rounded-full bg-[#4E5F45] animate-pulse" />
+            Android Beta
+          </span>
         </Link>
 
         {/* Desktop Navigation */}
@@ -39,9 +38,9 @@ export const Header = () => {
           </Link>
           <button
             onClick={() => document.getElementById('waitlist')?.scrollIntoView({ behavior: 'smooth' })}
-            className="px-5 py-2 ml-4 bg-[#27170c] text-white rounded-full font-semibold hover:opacity-90 transition-opacity shadow-sm text-sm"
+            className="px-5 py-2 ml-4 bg-[#27170c] text-white rounded-full font-semibold hover:opacity-90 transition-opacity shadow-sm text-sm flex items-center gap-2"
           >
-            Join Waitlist
+            Join Beta
           </button>
         </nav>
 
@@ -84,9 +83,9 @@ export const Header = () => {
                 setMenuOpen(false);
                 document.getElementById('waitlist')?.scrollIntoView({ behavior: 'smooth' });
               }}
-              className="px-5 py-3 text-left font-semibold text-sm hover:bg-black/5 transition-colors text-[#27170c]/85 border-t border-black/5"
+              className="px-5 py-3 text-left font-bold text-sm hover:bg-black/5 transition-colors border-t border-black/5 text-[#E58C74]"
             >
-              Join Waitlist
+              Join Beta
             </button>
           </div>
         )}

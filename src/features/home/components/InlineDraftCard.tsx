@@ -30,7 +30,6 @@ import { useHomeData } from '../hooks/useHomeData';
 import { useTaskData } from '../hooks/useTaskData';
 import { formatTime } from '../utils/dateUtils';
 import { useRouter } from 'expo-router';
-import { supabase } from '@/utils/supabase';
 import { uploadMediaToSupabase } from '@/lib/storageService';
 
 const FEELINGS = [
@@ -167,12 +166,6 @@ export function InlineDraftCard() {
       setIsUploading(true);
       
       let finalMediaUri = mediaUri;
-      if (mediaUri && mediaUri.startsWith('file://')) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user?.id) {
-          finalMediaUri = await uploadMediaToSupabase(mediaUri, mediaType || 'photo', session.user.id);
-        }
-      }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       await addQuickMoment({

@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion, useScroll, useTransform } from 'framer-motion';
-import { Image as ImageIcon } from 'lucide-react-native';
+import { Image as ImageIcon, Rocket, Smartphone } from 'lucide-react-native';
 import React, { useRef } from 'react';
 
 // Imports from separated components and constants
@@ -213,6 +213,9 @@ export default function LandingPageWeb() {
                 transition={{ duration: 0.8 }}
                 className="flex flex-col gap-2"
               >
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#E58C74]/15 border border-[#E58C74]/30 text-[#E58C74] text-xs font-bold uppercase tracking-wider w-fit mb-2">
+                  <Rocket size={14} className="text-[#E58C74]" /> Android Beta is Now Live
+                </div>
                 <span className="text-[11px] font-bold tracking-[0.2em] uppercase opacity-60">The Day Begins</span>
                 <h2 className="text-[36px] lg:text-[64px] leading-[1.05] font-playfair font-bold tracking-tight">
                   A new day.<br />
@@ -318,9 +321,9 @@ export default function LandingPageWeb() {
                 </p>
                 <button
                   onClick={() => document.getElementById('waitlist')?.scrollIntoView({ behavior: 'smooth' })}
-                  className="mt-2 bg-[#27170c] text-white px-5 py-2 rounded-full font-bold text-xs shadow-md hover:opacity-90 transition-opacity"
+                  className="mt-2 bg-[#27170c] text-white px-5 py-2 rounded-full font-bold text-xs shadow-md hover:opacity-90 transition-opacity flex items-center gap-1.5"
                 >
-                  Join Waitlist
+                  <Smartphone size={14} /> Join Beta
                 </button>
               </div>
             </div>

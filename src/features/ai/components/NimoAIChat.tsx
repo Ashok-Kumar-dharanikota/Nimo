@@ -18,7 +18,7 @@ import {
 } from 'lucide-react-native';
 import * as Device from 'expo-device';
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -43,6 +43,12 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { AVAILABLE_MODELS, useModelStore, type AvailableModel } from '../hooks/useModelStore';
+import {
+  isDemoChatActive,
+  setDemoChatActive,
+  getDemoSeedStatus,
+  DEMO_CHAT_MESSAGES,
+} from '@/features/home/services/demoMomentsService';
 
 // ─── Quality badge config ────────────────────────────────────────
 const QUALITY_BADGE: Record<string, { label: string; color: string; bg: string }> = {
@@ -255,7 +261,13 @@ function ModelCard({ model, isSelected, onSelect }: {
 }
 
 // ─── Model Download Catalog ──────────────────────────────────────
-function ModelDownloadCatalog({ onStartDownload }: { onStartDownload: (modelId: string) => void }) {
+function ModelDownloadCatalog({
+  onStartDownload,
+  onOpenDemo,
+}: {
+  onStartDownload: (modelId: string) => void;
+  onOpenDemo?: () => void;
+}) {
   const { selectedModelId, selectModel } = useModelStore();
 
   return (
@@ -284,6 +296,22 @@ function ModelDownloadCatalog({ onStartDownload }: { onStartDownload: (modelId: 
           Your personal, empathetic journaling friend.{'\n'}
           Choose a companion to get started.
         </Text>
+
+        {onOpenDemo && (
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              onOpenDemo();
+            }}
+            className="mt-4 flex-row items-center gap-2 bg-[#56643415] border border-[#56643440] px-4 py-2 rounded-full"
+          >
+            <Sparkles size={14} color="#566434" />
+            <Text className="font-jakarta text-[12px] font-bold text-[#566434]">
+              Preview Screenshot Chat UI
+            </Text>
+          </TouchableOpacity>
+        )}
       </Animated.View>
 
       {/* Feature Pills */}
@@ -394,12 +422,15 @@ function ChatInterface({
   onBack: () => void;
 }) {
   const router = useRouter();
-  const [inputText, setInputText] = useState('');
+  const isDemo = isDemoChatActive();
+  const [inputText, setInputText] = useState(() => (isDemo ? 'Suggest a gentle evening reflection prompt for tonight' : ''));
   const scrollViewRef = useRef<ScrollView>(null);
   const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
   const { isPremium } = useSubscription();
   const { profile } = useProfileStore();
   const { todayTasks } = useTaskData();
+
+  const [demoExtraMessages, setDemoExtraMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
 
   const modelConfig = selectedModel.getModelConfig();
 
@@ -459,11 +490,28 @@ Always be empathetic, concise, and encouraging. Keep responses under 3 paragraph
     if (scrollViewRef.current) {
       setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
     }
-  }, [llm.messageHistory, llm.response, llm.isGenerating]);
+  }, [llm.messageHistory, llm.response, llm.isGenerating, demoExtraMessages]);
 
   const sendMessage = useCallback(async (forcedText?: string) => {
     const text = (forcedText || inputText).trim();
-    if (!text || llm.isGenerating || !llm.isReady) return;
+    if (!text) return;
+
+    if (isDemo) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setInputText('');
+      setDemoExtraMessages((prev) => [
+        ...prev,
+        { role: 'user', content: text },
+        {
+          role: 'assistant',
+          content:
+            'Thank you for sharing that reflection with me! I have logged it into your Memory Garden. Is there anything else on your mind today?',
+        },
+      ]);
+      return;
+    }
+
+    if (llm.isGenerating || !llm.isReady) return;
 
     if (hasReachedLimit) {
       router.push('/paywall');
@@ -497,19 +545,21 @@ Always be empathetic, concise, and encouraging. Keep responses under 3 paragraph
     } catch (e) {
       console.warn('LLM sendMessage error:', e);
     }
-  }, [inputText, llm, hasReachedLimit]);
+  }, [inputText, llm, hasReachedLimit, isDemo]);
 
   // Compute status
-  const status: 'downloading' | 'loading' | 'ready' | 'error' = llm.error
-    ? 'error'
-    : llm.isReady
-      ? 'ready'
-      : llm.downloadProgress > 0 && llm.downloadProgress < 1
-        ? 'downloading'
-        : 'loading';
+  const status: 'downloading' | 'loading' | 'ready' | 'error' = isDemo
+    ? 'ready'
+    : llm.error
+      ? 'error'
+      : llm.isReady
+        ? 'ready'
+        : llm.downloadProgress > 0 && llm.downloadProgress < 1
+          ? 'downloading'
+          : 'loading';
 
   // ── Error state ──
-  if (llm.error) {
+  if (llm.error && !isDemo) {
     return (
       <View className="flex-1">
         <ChatHeader modelName={selectedModel.characterName} onBack={onBack} status="error" />
@@ -545,7 +595,7 @@ Always be empathetic, concise, and encouraging. Keep responses under 3 paragraph
         keyboardShouldPersistTaps="handled"
       >
         {/* Inline Initialization / Loading Banner */}
-        {!llm.isReady && (
+        {!llm.isReady && !isDemo && (
           <Animated.View entering={FadeIn.duration(300)} className="mb-4 bg-[#eef1e4] rounded-[18px] p-3.5 border border-[#d8e0be] flex-row items-center gap-3">
             <ActivityIndicator size="small" color="#566434" />
             <View className="flex-1">
@@ -562,7 +612,7 @@ Always be empathetic, concise, and encouraging. Keep responses under 3 paragraph
         )}
 
         {/* Empty state */}
-        {!hasUserSentMessage && llm.messageHistory.length === 0 && (
+        {!isDemo && !hasUserSentMessage && llm.messageHistory.length === 0 && (
           <Animated.View entering={FadeIn.duration(400)} className="items-center pt-8">
             <View className="w-16 h-16 rounded-full bg-[#eef1e4] items-center justify-center mb-4">
               <Sparkles size={28} color="#566434" />
@@ -598,8 +648,7 @@ Always be empathetic, concise, and encouraging. Keep responses under 3 paragraph
         )}
 
         {/* Message bubbles */}
-        {llm.messageHistory
-          .filter((m) => m.role !== 'system')
+        {(isDemo ? [...DEMO_CHAT_MESSAGES, ...demoExtraMessages] : llm.messageHistory.filter((m) => m.role !== 'system'))
           .map((msg, idx) => {
             let displayContent = msg.content;
             if (msg.role === 'user' && displayContent.includes('\n\nUser Question: ')) {
@@ -615,7 +664,7 @@ Always be empathetic, concise, and encouraging. Keep responses under 3 paragraph
           })}
 
         {/* Streaming response */}
-        {llm.isGenerating && llm.response && (
+        {!isDemo && llm.isGenerating && llm.response && (
           <Animated.View entering={FadeIn.duration(150)} className="self-start max-w-[85%] mb-3">
             <View className="flex-row items-center gap-1.5 mb-1">
               <View className="w-5 h-5 rounded-full bg-[#566434] items-center justify-center">
@@ -632,7 +681,7 @@ Always be empathetic, concise, and encouraging. Keep responses under 3 paragraph
         )}
 
         {/* Typing indicator */}
-        {llm.isGenerating && !llm.response && (
+        {!isDemo && llm.isGenerating && !llm.response && (
           <View className="self-start mb-3">
             <View className="flex-row items-center gap-1.5 mb-1">
               <View className="w-5 h-5 rounded-full bg-[#566434] items-center justify-center">
@@ -649,7 +698,7 @@ Always be empathetic, concise, and encouraging. Keep responses under 3 paragraph
 
       {/* Input Bar */}
       <View className="px-4 pb-4 pt-2 border-t border-[#efe9e1] bg-[#fbf9f4]">
-        {hasReachedLimit ? (
+        {hasReachedLimit && !isDemo ? (
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={() => router.push('/paywall')}
@@ -660,7 +709,7 @@ Always be empathetic, concise, and encouraging. Keep responses under 3 paragraph
               Upgrade to continue chatting
             </Text>
           </TouchableOpacity>
-        ) : (!todayTasks || todayTasks.length === 0) ? (
+        ) : (!todayTasks || todayTasks.length === 0) && !isDemo ? (
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={() => router.push('/(app)/home')}
@@ -676,28 +725,30 @@ Always be empathetic, concise, and encouraging. Keep responses under 3 paragraph
             <TextInput
               className="flex-1 font-jakarta text-[14px] text-[#27170c] max-h-[100px] py-1.5"
               placeholder={
-                !llm.isReady
-                  ? `Preparing ${selectedModel.characterName}...`
-                  : llm.isGenerating
-                    ? 'Thinking...'
-                    : 'Message your companion...'
+                isDemo
+                  ? 'Message your companion...'
+                  : !llm.isReady
+                    ? `Preparing ${selectedModel.characterName}...`
+                    : llm.isGenerating
+                      ? 'Thinking...'
+                      : 'Message your companion...'
               }
               placeholderTextColor="#b3a598"
               value={inputText}
               onChangeText={setInputText}
               multiline
-              editable={llm.isReady && !llm.isGenerating}
+              editable={isDemo || (llm.isReady && !llm.isGenerating)}
               onSubmitEditing={() => sendMessage()}
               blurOnSubmit={false}
             />
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => sendMessage()}
-              disabled={!inputText.trim() || !llm.isReady || llm.isGenerating}
-              className={`w-9 h-9 rounded-full items-center justify-center ${inputText.trim() && llm.isReady && !llm.isGenerating ? 'bg-[#566434]' : 'bg-[#e4e2dd]'
+              disabled={!inputText.trim() || (!isDemo && (!llm.isReady || llm.isGenerating))}
+              className={`w-9 h-9 rounded-full items-center justify-center ${inputText.trim() && (isDemo || (llm.isReady && !llm.isGenerating)) ? 'bg-[#566434]' : 'bg-[#e4e2dd]'
                 }`}
             >
-              <Send size={16} color={inputText.trim() && llm.isReady && !llm.isGenerating ? '#ffffff' : '#a89a8b'} />
+              <Send size={16} color={inputText.trim() && (isDemo || (llm.isReady && !llm.isGenerating)) ? '#ffffff' : '#a89a8b'} />
             </TouchableOpacity>
           </View>
         )}
@@ -760,6 +811,33 @@ function ChatHeader({
 // ─── Main Export ──────────────────────────────────────────────────
 export function NimoAIChat() {
   const { selectedModelId, selectedModel, isModelActivated, activateModel, clearModel } = useModelStore();
+  const [isDemo, setIsDemo] = useState(isDemoChatActive());
+
+  useFocusEffect(
+    useCallback(() => {
+      getDemoSeedStatus().then((status) => {
+        if (status.isSeeded) {
+          setDemoChatActive(true);
+          setIsDemo(true);
+        } else {
+          setIsDemo(isDemoChatActive());
+        }
+      });
+    }, [])
+  );
+
+  if (isDemo) {
+    const demoModel = AVAILABLE_MODELS[0];
+    return (
+      <ChatInterface
+        selectedModel={demoModel}
+        onBack={() => {
+          setDemoChatActive(false);
+          setIsDemo(false);
+        }}
+      />
+    );
+  }
 
   // Show catalog if no model selected OR model not activated yet
   if (!selectedModelId || !selectedModel || !isModelActivated) {
@@ -768,6 +846,10 @@ export function NimoAIChat() {
         onStartDownload={(modelId) => {
           setupExecutorch();
           activateModel(modelId);
+        }}
+        onOpenDemo={() => {
+          setDemoChatActive(true);
+          setIsDemo(true);
         }}
       />
     );

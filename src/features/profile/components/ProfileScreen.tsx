@@ -232,24 +232,21 @@ export function ProfileScreen() {
                 }
               }}
             />
-            <View className="h-[1px] bg-[#efe9e1] mx-4" />
-            {!profile.email ? (
-              <>
-                <MenuItem
-                  icon={LogIn}
-                  label="Link Google Account"
-                  value=""
-                  onPress={() => router.push('/auth')}
-                />
-                <View className="h-[1px] bg-[#efe9e1] mx-4" />
-              </>
-            ) : null}
-            <MenuItem
-              icon={LogOut}
-              label="Sign Out"
-              value=""
-              onPress={() => setSignOutModalVisible(true)}
-            />
+            {profile.isGuest || !profile.email ? (
+              <MenuItem
+                icon={LogIn}
+                label="Link Google Account"
+                value=""
+                onPress={() => router.push('/auth')}
+              />
+            ) : (
+              <MenuItem
+                icon={LogOut}
+                label="Sign Out"
+                value=""
+                onPress={() => setSignOutModalVisible(true)}
+              />
+            )}
           </View>
 
           {/* Quick Links */}
