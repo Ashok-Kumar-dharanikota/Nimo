@@ -30,6 +30,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useProfileStore } from '../hooks/useProfileStore';
 import { clearLocalDatabase } from '@/lib/syncEngine';
 
+import Constants from 'expo-constants';
 import { useSubscription } from '@/components/SubscriptionProvider';
 import { Sparkles } from 'lucide-react-native';
 import { Platform } from 'react-native';
@@ -260,6 +261,13 @@ export function ProfileScreen() {
             <View className="h-[1px] bg-[#efe9e1] mx-4" />
             <MenuItem icon={FileText} label="Terms of Service" onPress={() => router.push('/terms')} />
           </View>
+        </Animated.View>
+
+        {/* App Version Info */}
+        <Animated.View entering={FadeInDown.delay(300)} className="items-center pb-8 pt-4">
+          <Text className="font-jakarta text-[12px] text-[#a89a8b]">
+            {Constants.expoConfig?.name || 'Nimo'} v{Constants.expoConfig?.version || '1.0.0'}
+          </Text>
         </Animated.View>
       </KeyboardAwareScrollView>
 

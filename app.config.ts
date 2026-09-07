@@ -1,11 +1,25 @@
 import { ExpoConfig, ConfigContext } from 'expo/config';
 
 export default ({ config }: ConfigContext): ExpoConfig => {
-  const IS_DEV = process.env.APP_VARIANT === 'development';
+  const variant = process.env.APP_VARIANT;
+  const isDev = variant === 'development';
+  const isPreview = variant === 'preview';
+
+  const getAppName = () => {
+    if (isDev) return 'Nimo - Life Journal (Dev)';
+    if (isPreview) return 'Nimo - Life Journal (Preview)';
+    return 'Nimo - Life Journal';
+  };
+
+  const getIdentifier = () => {
+    if (isDev) return 'com.cornerstonestudio.nimoai.dev';
+    if (isPreview) return 'com.cornerstonestudio.nimoai.preview';
+    return 'com.cornerstonestudio.nimoai';
+  };
 
   return {
     ...config,
-    name: IS_DEV ? 'Nimo - Life Journal (Dev)' : 'Nimo - Life Journal',
+    name: getAppName(),
     slug: 'Nimo',
     version: '1.0.0',
     orientation: 'portrait',
@@ -22,7 +36,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     userInterfaceStyle: 'light',
     ios: {
       icon: './assets/images/nimo/nimo_logo.png',
-      bundleIdentifier: IS_DEV ? 'com.cornerstonestudio.nimoai.dev' : 'com.cornerstonestudio.nimoai',
+      bundleIdentifier: getIdentifier(),
     },
     android: {
       adaptiveIcon: {
@@ -30,7 +44,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         foregroundImage: './assets/images/nimo/nimo_logo.png',
       },
       predictiveBackGestureEnabled: false,
-      package: IS_DEV ? 'com.cornerstonestudio.nimoai.dev' : 'com.cornerstonestudio.nimoai',
+      package: getIdentifier(),
       googleServicesFile: './google-services.json',
     },
     web: {
@@ -65,6 +79,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         projectId: 'e963b477-ea1d-47a4-88ff-03bc1b408911',
       },
     },
-    owner: 'ashokkumard',
+    owner: 'dakstar-org',
   };
 };

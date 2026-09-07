@@ -17,9 +17,18 @@ import { setupExecutorch } from '@/lib/executorch';
 import { PortalHost } from '@rn-primitives/portal';
 import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
+import { vexo } from 'vexo-analytics';
 
 // Initialize ExecuTorch resource fetcher for on-device models
 setupExecutorch();
+
+// Initialize Vexo Analytics
+if (!__DEV__) {
+  vexo('b4b2da70-4c55-43eb-891c-eadb0a1cffaa');
+} else {
+  // Optional: run in dev for testing, or omit
+  vexo('b4b2da70-4c55-43eb-891c-eadb0a1cffaa');
+}
 
 const queryClient = new QueryClient();
 

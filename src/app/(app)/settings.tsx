@@ -306,7 +306,7 @@ export default function Settings() {
           />
         </SettingsSection>
 
-        {/* Play Store Screenshots Demo Data */}
+        {/* Play Store Screenshots Demo Data
         <SettingsSection title="Play Store Screenshots" delay={280}>
           <SettingsRow
             icon={Sparkles}
@@ -332,6 +332,7 @@ export default function Settings() {
             </>
           )}
         </SettingsSection>
+        */}
 
         {/* Danger Zone */}
         <SettingsSection title="Danger Zone" delay={300}>
