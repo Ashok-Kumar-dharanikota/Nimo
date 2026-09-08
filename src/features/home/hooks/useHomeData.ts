@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getWeeklyStreaks,
@@ -5,14 +6,28 @@ import {
   getTodaysFlow,
   addQuickMoment,
   getMomentsForCurrentYear,
+  getGardenSummary,
   deleteMoment,
-  getTodayMomentsCount,
+  type GardenSummary,
 } from '../services/homeService';
-import { useSubscription } from '@/components/SubscriptionProvider';
+
+export const useGardenData = () => {
+  const query = useQuery({
+    queryKey: ['memoryTree'],
+    queryFn: () => getMomentsForCurrentYear(),
+  });
+
+  return {
+    memoryTree: query.data || [],
+    isLoading: query.isLoading,
+    refetch: query.refetch,
+  };
+};
 
 export const useHomeData = (selectedDate?: Date) => {
   const queryClient = useQueryClient();
-  const { isPremium } = useSubscription();
+
+  const selectedDateIso = selectedDate ? selectedDate.toISOString() : undefined;
 
   const weeklyStreaksQuery = useQuery({
     queryKey: ['weeklyStreaks'],
@@ -25,13 +40,13 @@ export const useHomeData = (selectedDate?: Date) => {
   });
 
   const todaysFlowQuery = useQuery({
-    queryKey: ['todaysFlow', selectedDate?.toISOString()],
+    queryKey: ['todaysFlow', selectedDateIso],
     queryFn: () => getTodaysFlow(selectedDate),
   });
 
-  const memoryTreeQuery = useQuery({
-    queryKey: ['memoryTree'],
-    queryFn: () => getMomentsForCurrentYear(),
+  const gardenSummaryQuery = useQuery({
+    queryKey: ['gardenSummary'],
+    queryFn: getGardenSummary,
   });
 
   const addMomentMutation = useMutation({
@@ -52,13 +67,6 @@ export const useHomeData = (selectedDate?: Date) => {
       isDraft?: boolean;
       id?: number | null;
     }) => {
-      // Check limits before saving a new moment
-      // if (!id && !isDraft) {
-      //   const count = await getTodayMomentsCount();
-      //   if (count >= 5 && !isPremium) {
-      //     throw new Error('LIMIT_REACHED');
-      //   }
-      // }
       return addQuickMoment(
         content,
         emotion ?? null,
@@ -73,6 +81,7 @@ export const useHomeData = (selectedDate?: Date) => {
       queryClient.invalidateQueries({ queryKey: ['weeklyStreaks'] });
       queryClient.invalidateQueries({ queryKey: ['recentEntries'] });
       queryClient.invalidateQueries({ queryKey: ['todaysFlow'] });
+      queryClient.invalidateQueries({ queryKey: ['gardenSummary'] });
       queryClient.invalidateQueries({ queryKey: ['memoryTree'] });
     },
   });
@@ -83,24 +92,28 @@ export const useHomeData = (selectedDate?: Date) => {
       queryClient.invalidateQueries({ queryKey: ['weeklyStreaks'] });
       queryClient.invalidateQueries({ queryKey: ['recentEntries'] });
       queryClient.invalidateQueries({ queryKey: ['todaysFlow'] });
+      queryClient.invalidateQueries({ queryKey: ['gardenSummary'] });
       queryClient.invalidateQueries({ queryKey: ['memoryTree'] });
     },
   });
+
+  const refetch = useCallback(() => {
+    weeklyStreaksQuery.refetch();
+    recentEntriesQuery.refetch();
+    todaysFlowQuery.refetch();
+    gardenSummaryQuery.refetch();
+  }, [weeklyStreaksQuery, recentEntriesQuery, todaysFlowQuery, gardenSummaryQuery]);
 
   return {
     weeklyStreaks: weeklyStreaksQuery.data || [],
     recentEntries: recentEntriesQuery.data || [],
     todaysFlow: todaysFlowQuery.data || [],
-    memoryTree: memoryTreeQuery.data || [],
-    isLoading: memoryTreeQuery.isLoading,
+    gardenSummary: gardenSummaryQuery.data || { leavesCount: 0, lastRecordDate: null, daysActive: 0 },
+    memoryTree: [],
+    isLoading: todaysFlowQuery.isLoading || gardenSummaryQuery.isLoading,
     addQuickMoment: addMomentMutation.mutateAsync,
     deleteMoment: deleteMomentMutation.mutateAsync,
     isAddingMoment: addMomentMutation.isPending,
-    refetch: () => {
-      weeklyStreaksQuery.refetch();
-      recentEntriesQuery.refetch();
-      todaysFlowQuery.refetch();
-      memoryTreeQuery.refetch();
-    },
+    refetch,
   };
 };

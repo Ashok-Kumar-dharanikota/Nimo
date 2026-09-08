@@ -31,6 +31,8 @@ export const formatDateForSQLite = (date: Date) => {
   return `${y}-${m}-${d}`;
 };
 
+export const formatDate = formatDateForSQLite;
+
 export const parseSQLiteDate = (sqliteDateStr: string): Date => {
   if (!sqliteDateStr) return new Date();
   if (sqliteDateStr.endsWith('Z') || sqliteDateStr.includes('T')) {

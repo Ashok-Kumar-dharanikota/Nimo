@@ -1,4 +1,4 @@
-import { useSubscription } from '@/components/SubscriptionProvider';
+import { draftStore } from '@/store/draftStore';
 import * as Haptics from 'expo-haptics';
 import { Tabs, useRouter } from 'expo-router';
 import { House, Plus, Search, User } from 'lucide-react-native';
@@ -8,7 +8,6 @@ import { useNotificationScheduler } from '@/hooks/useNotificationScheduler';
 
 export default function AppLayout() {
   const router = useRouter();
-  const { isPremium } = useSubscription();
   const { scheduleNotifications } = useNotificationScheduler();
 
   useEffect(() => {
@@ -19,6 +18,8 @@ export default function AppLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        freezeOnBlur: true,
+        lazy: true,
         tabBarActiveTintColor: '#566434',
         tabBarInactiveTintColor: '#8c8e8a',
         tabBarStyle: {
@@ -61,7 +62,8 @@ export default function AppLayout() {
               activeOpacity={0.85}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                router.push({ pathname: '/(app)/home', params: { create: 'true' } });
+                draftStore.startDraft();
+                router.navigate('/(app)');
               }}
               style={{
                 top: -18,

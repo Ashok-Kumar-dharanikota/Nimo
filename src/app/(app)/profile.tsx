@@ -1,6 +1,6 @@
 import React from 'react';
-import { ProfileScreen } from '@/features/profile/components/ProfileScreen';
+import { ProfileScreenView } from '@/features/profile';
 
 export default function ProfileTabScreen() {
-  return <ProfileScreen />;
+  return <ProfileScreenView />;
 }

@@ -55,21 +55,8 @@ export const useProfileStore = create<ProfileState>()(
         })),
       clearProfile: () => set({ profile: DEFAULTS }),
       signOut: async () => {
-        const { clearLocalDatabase } = require('@/lib/syncEngine');
-        const { GoogleOneTapSignIn } = require('react-native-nitro-google-signin');
-        const { Platform } = require('react-native');
-        
-        await clearLocalDatabase();
-        
-        try {
-          await GoogleOneTapSignIn.signOut();
-        } catch (e) {
-          console.warn('Failed to sign out from Google', e);
-        }
-        
-        globalStorage.remove('google_access_token');
-        globalStorage.remove('is_guest');
-        
+        const { authService } = require('@/features/auth');
+        await authService.signOut();
         set({ profile: DEFAULTS });
       },
     }),

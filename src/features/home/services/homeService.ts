@@ -293,6 +293,44 @@ export const getMomentsForCurrentYear = async (): Promise<DayData[]> => {
   return result;
 };
 
+export interface GardenSummary {
+  leavesCount: number;
+  lastRecordDate: string | null;
+  daysActive: number;
+}
 
+export const getGardenSummary = async (): Promise<GardenSummary> => {
+  try {
+    const res = await db
+      .select({
+        totalLeaves: count(moment.id),
+        latestDate: sql<string>`max(${moment.createdAt})`,
+        activeDays: sql<number>`count(distinct date(${moment.createdAt}, 'localtime'))`,
+      })
+      .from(moment)
+      .where(isNull(moment.deletedAt));
 
+    return {
+      leavesCount: res[0]?.totalLeaves ?? 0,
+      lastRecordDate: res[0]?.latestDate ?? null,
+      daysActive: res[0]?.activeDays ?? 0,
+    };
+  } catch (err) {
+    console.error('[Nimo] getGardenSummary failed:', err);
+    return {
+      leavesCount: 0,
+      lastRecordDate: null,
+      daysActive: 0,
+    };
+  }
+};
 
+export const homeService = {
+  getWeeklyStreaks,
+  getRecentEntries,
+  getTodaysFlow,
+  addQuickMoment,
+  deleteMoment,
+  getMomentsForCurrentYear,
+  getGardenSummary,
+};

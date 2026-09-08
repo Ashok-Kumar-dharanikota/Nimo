@@ -10,7 +10,6 @@ import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { StatusBar } from 'expo-status-bar';
 
 import { GlobalDialog } from '@/components/GlobalDialog';
-import { SubscriptionProvider } from '@/components/SubscriptionProvider';
 import { db } from '@/db';
 import migrations from '@/db/migrations/migrations';
 import { setupExecutorch } from '@/lib/executorch';
@@ -27,10 +26,18 @@ if (!__DEV__) {
   vexo('b4b2da70-4c55-43eb-891c-eadb0a1cffaa');
 } else {
   // Optional: run in dev for testing, or omit
-  vexo('b4b2da70-4c55-43eb-891c-eadb0a1cffaa');
+  // vexo('b4b2da70-4c55-43eb-891c-eadb0a1cffaa');
 }
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 2, // 2 minutes: tabs load instantly from cache without freezing JS thread
+      gcTime: 1000 * 60 * 10,    // 10 minutes cache retention
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
@@ -78,21 +85,18 @@ export default function TabLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <KeyboardProvider statusBarTranslucent navigationBarTranslucent>
-        <SubscriptionProvider>
-          <ThemeProvider value={DefaultTheme}>
-            <StatusBar style="dark" />
-            <AnimatedSplashOverlay />
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="onboarding" options={{ headerShown: false, animation: 'fade' }} />
-              <Stack.Screen name="auth" options={{ headerShown: false, animation: 'slide_from_right' }} />
-              <Stack.Screen name="(app)" options={{ headerShown: false }} />
-              <Stack.Screen name="compose" options={{ presentation: 'modal', headerShown: false, animation: 'slide_from_bottom' }} />
-              <Stack.Screen name="paywall" options={{ presentation: 'modal', headerShown: false, animation: 'slide_from_bottom' }} />
-            </Stack>
-            <GlobalDialog />
-            <PortalHost />
-          </ThemeProvider>
-        </SubscriptionProvider>
+        <ThemeProvider value={DefaultTheme}>
+          <StatusBar style="dark" />
+          <AnimatedSplashOverlay />
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="onboarding" options={{ headerShown: false, animation: 'fade' }} />
+            <Stack.Screen name="auth" options={{ headerShown: false, animation: 'slide_from_right' }} />
+            <Stack.Screen name="(app)" options={{ headerShown: false }} />
+            <Stack.Screen name="compose" options={{ presentation: 'modal', headerShown: false, animation: 'slide_from_bottom' }} />
+          </Stack>
+          <GlobalDialog />
+          <PortalHost />
+        </ThemeProvider>
       </KeyboardProvider>
     </QueryClientProvider>
   );

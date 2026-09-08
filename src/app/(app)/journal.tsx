@@ -1,9 +1,6 @@
-import { View, Text } from 'react-native';
+import React from 'react';
+import { JournalScreenView } from '@/features/journal';
 
-export default function JournalScreen() {
-  return (
-    <View className="flex-1 items-center justify-center bg-[#fbf9f4]">
-      <Text className="font-playfair text-xl">Journal (Coming Soon)</Text>
-    </View>
-  );
+export default function JournalRoute() {
+  return <JournalScreenView />;
 }

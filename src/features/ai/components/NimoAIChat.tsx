@@ -1,4 +1,3 @@
-import { useSubscription } from '@/components/SubscriptionProvider';
 import { useTaskData } from '@/features/home/hooks/useTaskData';
 import { useProfileStore } from '@/features/profile/hooks/useProfileStore';
 import { setupExecutorch } from '@/lib/executorch';
@@ -426,7 +425,6 @@ function ChatInterface({
   const [inputText, setInputText] = useState(() => (isDemo ? 'Suggest a gentle evening reflection prompt for tonight' : ''));
   const scrollViewRef = useRef<ScrollView>(null);
   const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
-  const { isPremium } = useSubscription();
   const { profile } = useProfileStore();
   const { todayTasks } = useTaskData();
 
@@ -462,8 +460,6 @@ function ChatInterface({
     storage.set('ai_usage_count', count);
     setDailyAiUsage(count);
   };
-
-  const hasReachedLimit = false; // !isPremium && dailyAiUsage >= 3;
 
   // Configure system prompt and generation config once ready
   useEffect(() => {
@@ -513,11 +509,6 @@ Always be empathetic, concise, and encouraging. Keep responses under 3 paragraph
 
     if (llm.isGenerating || !llm.isReady) return;
 
-    if (hasReachedLimit) {
-      router.push('/paywall');
-      return;
-    }
-
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setInputText('');
     setHasUserSentMessage(true);
@@ -545,7 +536,7 @@ Always be empathetic, concise, and encouraging. Keep responses under 3 paragraph
     } catch (e) {
       console.warn('LLM sendMessage error:', e);
     }
-  }, [inputText, llm, hasReachedLimit, isDemo]);
+  }, [inputText, llm, isDemo]);
 
   // Compute status
   const status: 'downloading' | 'loading' | 'ready' | 'error' = isDemo
@@ -635,9 +626,9 @@ Always be empathetic, concise, and encouraging. Keep responses under 3 paragraph
                 <TouchableOpacity
                   key={suggestion}
                   activeOpacity={0.7}
-                  disabled={!llm.isReady || hasReachedLimit}
+                  disabled={!llm.isReady}
                   onPress={() => sendMessage(suggestion)}
-                  className={`bg-white border border-[#efe9e1] rounded-full px-4 py-2.5 ${!llm.isReady || hasReachedLimit ? 'opacity-50' : ''
+                  className={`bg-white border border-[#efe9e1] rounded-full px-4 py-2.5 ${!llm.isReady ? 'opacity-50' : ''
                     }`}
                 >
                   <Text className="font-jakarta text-[12px] text-[#6b5d51]">{suggestion}</Text>
@@ -698,21 +689,10 @@ Always be empathetic, concise, and encouraging. Keep responses under 3 paragraph
 
       {/* Input Bar */}
       <View className="px-4 pb-4 pt-2 border-t border-[#efe9e1] bg-[#fbf9f4]">
-        {hasReachedLimit && !isDemo ? (
+        {(!todayTasks || todayTasks.length === 0) && !isDemo ? (
           <TouchableOpacity
             activeOpacity={0.8}
-            onPress={() => router.push('/paywall')}
-            className="flex-row items-center justify-center bg-[#566434] rounded-[22px] py-4 shadow-md"
-          >
-            <Sparkles size={16} color="#ffffff" style={{ marginRight: 8 }} />
-            <Text className="font-jakarta text-[15px] font-bold text-[#ffffff]">
-              Upgrade to continue chatting
-            </Text>
-          </TouchableOpacity>
-        ) : (!todayTasks || todayTasks.length === 0) && !isDemo ? (
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => router.push('/(app)/home')}
+            onPress={() => router.push('/(app)')}
             className="flex-row items-center justify-center bg-[#b5651d] rounded-[22px] py-4 shadow-md"
           >
             <Sparkles size={16} color="#ffffff" style={{ marginRight: 8 }} />

@@ -1,6 +1,6 @@
+import React, { useMemo } from "react";
 import { Text, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
-
 import { Check } from "lucide-react-native";
 import {
   formatSQLiteDate,
@@ -18,9 +18,22 @@ interface WeeklyStreaksProps {
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-export function WeeklyStreaks({ moments }: WeeklyStreaksProps) {
-  const weekDates = getCurrentWeekDates();
-  const today = new Date();
+function WeeklyStreaksComponent({ moments }: WeeklyStreaksProps) {
+  const weekDates = useMemo(() => getCurrentWeekDates(), []);
+  const today = useMemo(() => new Date(), []);
+
+  const completedDateStrings = useMemo(() => {
+    const set = new Set<string>();
+    for (const moment of moments) {
+      if (moment.createdAt) {
+        const d = formatSQLiteDate(moment.createdAt);
+        set.add(
+          `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+        );
+      }
+    }
+    return set;
+  }, [moments]);
 
   return (
     <Animated.View
@@ -29,10 +42,8 @@ export function WeeklyStreaks({ moments }: WeeklyStreaksProps) {
     >
       {weekDates.map((date, index) => {
         const isToday = isSameDay(date, today);
-
-        const completed = moments.some((moment) =>
-          isSameDay(formatSQLiteDate(moment.createdAt), date)
-        );
+        const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        const completed = completedDateStrings.has(dateStr);
 
         const dayStyle = completed
           ? "text-secondary font-bold"
@@ -80,10 +91,11 @@ export function WeeklyStreaks({ moments }: WeeklyStreaksProps) {
             >
               {completed ? "" : isToday ? "Today" : ""}
             </Text>
-
           </View>
         );
       })}
     </Animated.View>
   );
 }
+
+export const WeeklyStreaks = React.memo(WeeklyStreaksComponent);

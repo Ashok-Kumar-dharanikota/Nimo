@@ -179,11 +179,7 @@ export function InlineDraftCard() {
       });
       clearDraft();
     } catch (e: any) {
-      if (e.message === 'LIMIT_REACHED') {
-        router.push('/paywall');
-      } else {
-        console.error('Error saving moment:', e);
-      }
+      console.error('Error saving moment:', e);
     } finally {
       setIsUploading(false);
     }

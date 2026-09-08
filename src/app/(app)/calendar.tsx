@@ -1,9 +1,6 @@
-import { View, Text } from 'react-native';
+import React from 'react';
+import { CalendarScreenView } from '@/features/calendar';
 
-export default function CalendarScreen() {
-  return (
-    <View className="flex-1 items-center justify-center bg-[#fbf9f4]">
-      <Text className="font-playfair text-xl">Calendar (Coming Soon)</Text>
-    </View>
-  );
+export default function CalendarRoute() {
+  return <CalendarScreenView />;
 }

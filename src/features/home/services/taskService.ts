@@ -55,3 +55,9 @@ export const completeTask = async (id: number, title: string): Promise<void> => 
     true // skipRag initially
   );
 };
+
+export const taskService = {
+  getTodayTasks,
+  setTodayTask,
+  completeTask,
+};

@@ -1,20 +1,17 @@
-import { Gem, Flame } from "lucide-react-native";
-import { Text, TouchableOpacity, View } from "react-native";
-import { useRouter } from "expo-router";
+import React, { useMemo } from "react";
+import { Flame } from "lucide-react-native";
+import { Text, View } from "react-native";
 import { calculateStreak } from "../utils/dateUtils";
 import { useProfileStore } from "@/features/profile/hooks/useProfileStore";
-import { useSubscription } from "@/components/SubscriptionProvider";
 import { SyncIndicator } from "./SyncIndicator";
 
 interface TopAppBarProps {
   moments?: Array<{ createdAt: string }>;
 }
 
-export function TopAppBar({ moments = [] }: TopAppBarProps) {
-  const router = useRouter();
+function TopAppBarComponent({ moments = [] }: TopAppBarProps) {
   const { profile } = useProfileStore();
-  const { isPremium } = useSubscription();
-  const streak = calculateStreak(moments);
+  const streak = useMemo(() => calculateStreak(moments), [moments]);
   const hour = new Date().getHours();
 
   let greeting = "Good Evening";
@@ -38,17 +35,6 @@ export function TopAppBar({ moments = [] }: TopAppBarProps) {
       </View>
 
       <View className="flex-row items-center gap-3">
-        {!isPremium && (
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => router.push("/paywall")}
-            className="bg-black px-3 py-1.5 rounded-full flex-row items-center gap-1.5"
-          >
-            <Gem size={12} color="#ffffff" />
-            <Text className="font-jakarta text-[12px] font-bold text-white">Upgrade</Text>
-          </TouchableOpacity>
-        )}
-        
         {/* Streak indicator */}
         <View className="flex-row items-center gap-1 bg-surfaceContainer px-3 py-1.5 rounded-full border border-outlineVariant/20">
           <Flame
@@ -60,8 +46,10 @@ export function TopAppBar({ moments = [] }: TopAppBarProps) {
           </Text>
         </View>
 
-        {isPremium && <SyncIndicator />}
+        <SyncIndicator />
       </View>
     </View>
   );
 }
+
+export const TopAppBar = React.memo(TopAppBarComponent);
