@@ -2,7 +2,12 @@ import { PlayfairDisplay_600SemiBold, PlayfairDisplay_700Bold } from '@expo-goog
 import { PlusJakartaSans_400Regular, PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold, useFonts } from '@expo-google-fonts/plus-jakarta-sans';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
-import { Text, useColorScheme, View } from 'react-native';
+import { LogBox, Text, useColorScheme, View } from 'react-native';
+
+// Ignore upstream React 19 / Expo Router useLinking dev warning during initial linking state resolution
+LogBox.ignoreLogs([
+  "Can't perform a React state update on a component that hasn't mounted yet",
+]);
 
 import '../../global.css';
 
@@ -84,7 +89,7 @@ export default function TabLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <KeyboardProvider statusBarTranslucent navigationBarTranslucent>
+      <KeyboardProvider>
         <ThemeProvider value={DefaultTheme}>
           <StatusBar style="dark" />
           <AnimatedSplashOverlay />

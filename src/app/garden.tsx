@@ -1,6 +1,6 @@
 import React from 'react';
-import { GardenScreenView } from '@/features/garden';
+import { Redirect } from 'expo-router';
 
 export default function GardenRoute() {
-  return <GardenScreenView />;
+  return <Redirect href="/(app)" />;
 }

@@ -56,8 +56,11 @@ export const draftStore = {
     return getSavedDraftState();
   },
 
-  startDraft() {
+  startDraft(initial?: { title?: string; emotion?: string; content?: string }) {
     storage.set(DRAFT_KEYS.isEditing, true);
+    if (initial?.title !== undefined) storage.set(DRAFT_KEYS.title, initial.title);
+    if (initial?.content !== undefined) storage.set(DRAFT_KEYS.content, initial.content);
+    if (initial?.emotion !== undefined) storage.set(DRAFT_KEYS.emotion, initial.emotion);
     notifyListeners();
   },
 

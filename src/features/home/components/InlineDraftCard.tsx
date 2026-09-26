@@ -6,7 +6,7 @@ import {
   CheckCircle,
   Coffee,
   Heart,
-  Image as ImageIcon,
+  ImagePlus,
   PenTool,
   Smile,
   Sparkles,
@@ -14,6 +14,7 @@ import {
   Video as VideoIcon,
   X,
   Plus,
+  Maximize2,
 } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import {
@@ -258,15 +259,27 @@ export function InlineDraftCard() {
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity onPress={clearDraft} activeOpacity={0.7} style={styles.discardIconBtn}>
-              <X size={16} color="#8c7c6c" />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <TouchableOpacity
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push('/compose');
+                }}
+                activeOpacity={0.7}
+                style={styles.discardIconBtn}
+              >
+                <Maximize2 size={14} color="#6b5d51" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={clearDraft} activeOpacity={0.7} style={styles.discardIconBtn}>
+                <X size={16} color="#8c7c6c" />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {activeTab === 'task' ? (
             <View>
               <Text style={{ fontFamily: 'Plus Jakarta Sans', fontSize: 13, color: '#8c7c6c', marginBottom: 12 }}>
-                Set a tiny task to unlock your garden today.
+                Set an intentional tiny task for your day.
               </Text>
               
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
@@ -314,6 +327,54 @@ export function InlineDraftCard() {
             </View>
           ) : null}
 
+          {/* Feeling Header (Moved above Title) */}
+          <View style={styles.feelingsRow}>
+            <View style={styles.feelingsLabelRow}>
+              <Text style={styles.feelingsLabel}>Feeling:</Text>
+              {selectedFeelingObj && SelectedFeelingIcon ? (
+                <View style={styles.selectedFeelingDisplay}>
+                  <SelectedFeelingIcon
+                    size={14}
+                    color={selectedFeelingObj.id === 'happy' ? selectedFeelingObj.bg : selectedFeelingObj.color}
+                    fill={selectedFeelingObj.color}
+                  />
+                  <Text style={[styles.selectedFeelingText, { color: selectedFeelingObj.color }]}>
+                    {selectedFeelingObj.label}
+                  </Text>
+                </View>
+              ) : (
+                <Text style={styles.noFeelingText}>Select a feeling</Text>
+              )}
+            </View>
+
+            {/* Feelings List (Icons ONLY, text removed) */}
+            <View style={styles.feelingsContainer}>
+              {FEELINGS.map(({ id, Icon, color, bg }) => {
+                const isSelected = selectedFeeling === id;
+                const iconColor = isSelected ? '#566434' : color;
+                return (
+                  <TouchableOpacity
+                    key={id}
+                    activeOpacity={0.7}
+                    onPress={() => handleFeelingSelect(id)}
+                    style={[
+                      styles.feelingIconButton,
+                      isSelected
+                        ? { backgroundColor: '#56643418', borderColor: '#566434', borderWidth: 2 }
+                        : { backgroundColor: '#fbf9f4', borderColor: '#e4e2dd' },
+                    ]}
+                  >
+                    <Icon
+                      size={18}
+                      color={id === 'happy' ? (isSelected ? '#eef1e4' : bg) : iconColor}
+                      fill={iconColor}
+                    />
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
           {/* Title Input */}
           <TextInput
             style={styles.titleInput}
@@ -321,6 +382,8 @@ export function InlineDraftCard() {
             placeholderTextColor="#a89a8b"
             value={title}
             onChangeText={handleTitleChange}
+            multiline
+            maxLength={80}
             returnKeyType="next"
           />
 
@@ -335,57 +398,16 @@ export function InlineDraftCard() {
             onChangeText={handleContentChange}
           />
 
-          {/* Attachment Action Button (Combined Media, Pen/Note removed) */}
+          {/* Attachment Action Button */}
           <View style={styles.attachmentBar}>
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={pickMedia}
               style={[styles.attachBtn, mediaUri ? styles.attachBtnActive : null]}
+              accessibilityLabel="Add Photo or Video"
             >
-              <ImageIcon size={17} color={mediaUri ? '#ffffff' : '#566434'} />
-              <Text style={[styles.attachBtnText, mediaUri ? styles.attachBtnTextActive : null]}>
-                {mediaUri ? (mediaType === 'video' ? 'Video Attached' : 'Photo Attached') : 'Add Photo / Video'}
-              </Text>
+              <ImagePlus size={18} color={mediaUri ? '#ffffff' : '#566434'} />
             </TouchableOpacity>
-          </View>
-
-          {/* Feeling Header (shows text & icon next to Feeling label) */}
-          <View style={styles.feelingsRow}>
-            <View style={styles.feelingsLabelRow}>
-              <Text style={styles.feelingsLabel}>Feeling:</Text>
-              {selectedFeelingObj && SelectedFeelingIcon ? (
-                <View style={styles.selectedFeelingDisplay}>
-                  <SelectedFeelingIcon size={14} color={selectedFeelingObj.color} />
-                  <Text style={[styles.selectedFeelingText, { color: selectedFeelingObj.color }]}>
-                    {selectedFeelingObj.label}
-                  </Text>
-                </View>
-              ) : (
-                <Text style={styles.noFeelingText}>Select a feeling</Text>
-              )}
-            </View>
-
-            {/* Feelings List (Icons ONLY, text removed) */}
-            <View style={styles.feelingsContainer}>
-              {FEELINGS.map(({ id, Icon, color }) => {
-                const isSelected = selectedFeeling === id;
-                return (
-                  <TouchableOpacity
-                    key={id}
-                    activeOpacity={0.7}
-                    onPress={() => handleFeelingSelect(id)}
-                    style={[
-                      styles.feelingIconButton,
-                      isSelected
-                        ? { backgroundColor: '#56643418', borderColor: '#566434', borderWidth: 2 }
-                        : { backgroundColor: '#fbf9f4', borderColor: '#e4e2dd' },
-                    ]}
-                  >
-                    <Icon size={18} color={isSelected ? '#566434' : color} />
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
           </View>
 
           {/* Action Buttons Row */}
@@ -395,7 +417,7 @@ export function InlineDraftCard() {
               onPress={handleSaveAsDraft}
               style={styles.saveDraftBtn}
             >
-              <Bookmark size={15} color="#4f453f" />
+              <Bookmark size={15} color="#4f453f" fill="#4f453f" />
               <Text style={styles.saveDraftBtnText}>Save Draft</Text>
             </TouchableOpacity>
 
@@ -415,8 +437,8 @@ export function InlineDraftCard() {
                 </View>
               ) : (
                 <>
-                  <CheckCircle size={15} color="white" />
-                  <Text style={styles.plantBtnText}>Plant Moment</Text>
+                  <CheckCircle size={15} color="#566434" fill="white" />
+                  <Text style={styles.plantBtnText}>Save Reflection</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -542,59 +564,47 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   titleInput: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 16.5,
+    fontWeight: '600',
     color: '#27170c',
-    fontFamily: 'Playfair Display',
-    backgroundColor: '#fbf9f4',
-    borderWidth: 1,
-    borderColor: '#efe9e1',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    fontFamily: 'Plus Jakarta Sans',
+    paddingHorizontal: 0,
+    paddingVertical: 6,
     marginBottom: 8,
+    lineHeight: 22,
   },
   contentInput: {
-    fontSize: 13.5,
+    fontSize: 14.5,
     color: '#27170c',
     fontFamily: 'Plus Jakarta Sans',
     backgroundColor: '#fbf9f4',
     borderWidth: 1,
     borderColor: '#efe9e1',
     borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    minHeight: 70,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    minHeight: 90,
     marginBottom: 10,
+    lineHeight: 22,
   },
   attachmentBar: {
     flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 12,
   },
   attachBtn: {
-    flex: 1,
-    flexDirection: 'row',
+    width: 38,
+    height: 38,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
     backgroundColor: '#fbf9f4',
     borderWidth: 1,
     borderColor: '#e4e2dd',
     borderRadius: 12,
-    paddingVertical: 8,
   },
   attachBtnActive: {
     backgroundColor: '#566434',
     borderColor: '#566434',
-  },
-  attachBtnText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#4f453f',
-    fontFamily: 'Plus Jakarta Sans',
-  },
-  attachBtnTextActive: {
-    color: '#ffffff',
   },
   feelingsRow: {
     marginBottom: 14,
@@ -652,7 +662,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 42,
     borderRadius: 12,
-    backgroundColor: '#f0eee9',
+    backgroundColor: 'transparent',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

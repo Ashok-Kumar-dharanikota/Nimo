@@ -11,9 +11,12 @@ import {
   Cpu,
   Download,
   Send,
+  Settings,
   Shield,
   Sparkles,
-  Star
+  Star,
+  Trash2,
+  CircleStop,
 } from 'lucide-react-native';
 import * as Device from 'expo-device';
 import * as Haptics from 'expo-haptics';
@@ -21,6 +24,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Platform,
   ScrollView,
   Text,
@@ -193,10 +197,20 @@ function ErrorState({ error, onRetry }: { error: string; onRetry: () => void }) 
 }
 
 // ─── Model Card ──────────────────────────────────────────────────
-function ModelCard({ model, isSelected, onSelect }: {
+function ModelCard({
+  model,
+  isSelected,
+  isInstalled,
+  installedSize,
+  onSelect,
+  onDelete,
+}: {
   model: AvailableModel;
   isSelected: boolean;
+  isInstalled: boolean;
+  installedSize?: string;
   onSelect: () => void;
+  onDelete: () => void;
 }) {
   const badge = QUALITY_BADGE[model.quality];
   const deviceMemoryMB = Device.totalMemory ? Device.totalMemory / (1024 * 1024) : 0;
@@ -211,26 +225,36 @@ function ModelCard({ model, isSelected, onSelect }: {
         onSelect();
       }}
       style={{ opacity: isSupported ? 1 : 0.6 }}
-      className={`rounded-[24px] p-5 border-2 mb-3 ${isSelected
-        ? 'border-[#566434] bg-[#eef1e4]/60'
-        : 'border-[#efe9e1] bg-white'
-        }`}
+      className={`rounded-[24px] p-5 border-2 mb-3 ${
+        isSelected
+          ? 'border-[#566434] bg-[#eef1e4]/60'
+          : 'border-[#efe9e1] bg-white'
+      }`}
     >
       <View className="flex-row items-start justify-between mb-2">
-        <View className="flex-1 pr-4">
+        <View className="flex-1 pr-3">
           <Text className="font-playfair text-[18px] font-bold text-[#27170c]">
             {model.characterName}
           </Text>
-          {!isSupported && (
+
+          {!isSupported ? (
             <View className="flex-row items-center gap-1 mt-1">
               <AlertCircle size={12} color="#dc2626" />
               <Text className="font-jakarta text-[11px] font-semibold text-[#dc2626]">
                 Requires {Math.round(model.minMemoryMB / 1024)}GB RAM (Device has {Math.round(deviceMemoryMB / 1024)}GB)
               </Text>
             </View>
-          )}
-          {isSupported && (
-            <View className="flex-row items-center gap-2 mt-1">
+          ) : (
+            <View className="flex-row items-center flex-wrap gap-2 mt-1.5">
+              {model.tag ? (
+                <View className="flex-row items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#566434]/10 border border-[#566434]/20">
+                  <Sparkles size={10} color="#566434" />
+                  <Text className="font-jakarta text-[10px] font-bold text-[#566434]">
+                    {model.tag}
+                  </Text>
+                </View>
+              ) : null}
+
               <View
                 className="flex-row items-center gap-1 px-2.5 py-0.5 rounded-full"
                 style={{ backgroundColor: badge.bg }}
@@ -242,17 +266,52 @@ function ModelCard({ model, isSelected, onSelect }: {
                   {badge.label}
                 </Text>
               </View>
+
+              {isInstalled ? (
+                <View className="flex-row items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#e3eedb] border border-[#c5dcba]">
+                  <Check size={10} color="#3d6b2c" />
+                  <Text className="font-jakarta text-[10px] font-bold text-[#3d6b2c]">
+                    Installed • {installedSize || model.sizeLabel}
+                  </Text>
+                </View>
+              ) : (
+                <View className="flex-row items-center gap-1 px-2 py-0.5 rounded-full bg-[#f4f2ed]">
+                  <Text className="font-jakarta text-[10px] font-medium text-[#8c7c6c]">
+                    {model.sizeLabel} download
+                  </Text>
+                </View>
+              )}
             </View>
           )}
         </View>
 
-        <View className={`w-6 h-6 rounded-full border-2 items-center justify-center ${isSelected ? 'border-[#566434] bg-[#566434]' : 'border-[#d2c4bc]'
-          }`}>
-          {isSelected && <Check size={14} color="#fff" />}
+        <View className="flex-row items-center gap-2">
+          {isInstalled && (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={(e) => {
+                e.stopPropagation();
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onDelete();
+              }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              className="w-8 h-8 rounded-full bg-[#fde8e8] items-center justify-center border border-[#fbd0d0]"
+            >
+              <Trash2 size={14} color="#dc2626" />
+            </TouchableOpacity>
+          )}
+
+          <View
+            className={`w-6 h-6 rounded-full border-2 items-center justify-center ${
+              isSelected ? 'border-[#566434] bg-[#566434]' : 'border-[#d2c4bc]'
+            }`}
+          >
+            {isSelected && <Check size={14} color="#fff" />}
+          </View>
         </View>
       </View>
 
-      <Text className="font-jakarta text-[13px] text-[#6b5d51] leading-relaxed">
+      <Text className="font-jakarta text-[13px] text-[#6b5d51] leading-relaxed mt-1">
         {model.description}
       </Text>
     </TouchableOpacity>
@@ -267,7 +326,39 @@ function ModelDownloadCatalog({
   onStartDownload: (modelId: string) => void;
   onOpenDemo?: () => void;
 }) {
-  const { selectedModelId, selectModel } = useModelStore();
+  const {
+    selectedModelId,
+    selectModel,
+    installedModelIds,
+    modelDiskSizes,
+    totalAiStorageUsed,
+    deleteModel,
+  } = useModelStore();
+
+  const selectedModel = AVAILABLE_MODELS.find((m) => m.id === selectedModelId) ?? AVAILABLE_MODELS[0];
+  const isSelectedInstalled = installedModelIds.includes(selectedModelId);
+
+  const handleDelete = (model: AvailableModel) => {
+    Alert.alert(
+      `Delete ${model.characterName.split(' - ')[0]}?`,
+      `This will remove the downloaded files (${modelDiskSizes[model.id] || model.sizeLabel}) from your device. You can download it again whenever you want.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Model',
+          style: 'destructive',
+          onPress: async () => {
+            const ok = await deleteModel(model.id);
+            if (ok) {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            } else {
+              Alert.alert('Error', 'Failed to delete model files.');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <ScrollView
@@ -276,8 +367,9 @@ function ModelDownloadCatalog({
       showsVerticalScrollIndicator={false}
     >
       {/* Hero Section */}
-      <Animated.View entering={FadeInDown.duration(400)} className="items-center pt-8 pb-6">
-        <View className="w-20 h-20 rounded-[28px] bg-[#566434] items-center justify-center mb-4 shadow-lg"
+      <Animated.View entering={FadeInDown.duration(400)} className="items-center pt-8 pb-5">
+        <View
+          className="w-20 h-20 rounded-[28px] bg-[#566434] items-center justify-center mb-4 shadow-lg"
           style={{
             shadowColor: '#566434',
             shadowOffset: { width: 0, height: 6 },
@@ -313,14 +405,44 @@ function ModelDownloadCatalog({
         )}
       </Animated.View>
 
+      {/* Storage Management Bar */}
+      <Animated.View
+        entering={FadeInDown.delay(80)}
+        className="mb-5 bg-white border border-[#ece5db] rounded-[20px] p-4 flex-row items-center justify-between shadow-sm"
+      >
+        <View className="flex-row items-center gap-3">
+          <View className="w-10 h-10 rounded-full bg-[#f4f2ed] items-center justify-center">
+            <Cpu size={20} color="#566434" />
+          </View>
+          <View>
+            <Text className="font-jakarta text-[13px] font-bold text-[#27170c]">
+              On-Device AI Storage
+            </Text>
+            <Text className="font-jakarta text-[11px] text-[#8c7c6c] mt-0.5">
+              {installedModelIds.length === 0
+                ? 'No models installed on device'
+                : `${installedModelIds.length} companion${installedModelIds.length > 1 ? 's' : ''} installed`}
+            </Text>
+          </View>
+        </View>
+        <View className="bg-[#eef1e4] px-3 py-1.5 rounded-full border border-[#d8e0be]">
+          <Text className="font-jakarta text-[12px] font-bold text-[#566434]">
+            {totalAiStorageUsed}
+          </Text>
+        </View>
+      </Animated.View>
+
       {/* Feature Pills */}
-      <Animated.View entering={FadeInDown.delay(100)} className="flex-row justify-center gap-2 mb-6">
+      <Animated.View entering={FadeInDown.delay(120)} className="flex-row justify-center gap-2 mb-6">
         {[
           { icon: Star, label: 'Empathetic' },
-          { icon: Shield, label: 'Private' },
-          { icon: Sparkles, label: 'Always There' },
+          { icon: Shield, label: '100% Private' },
+          { icon: Sparkles, label: 'Always Offline' },
         ].map(({ icon: Icon, label }) => (
-          <View key={label} className="flex-row items-center gap-1.5 bg-[#f0eee9] px-3 py-1.5 rounded-full border border-[#e4e2dd]">
+          <View
+            key={label}
+            className="flex-row items-center gap-1.5 bg-[#f0eee9] px-3 py-1.5 rounded-full border border-[#e4e2dd]"
+          >
             <Icon size={12} color="#566434" />
             <Text className="font-jakarta text-[11px] font-semibold text-[#566434]">{label}</Text>
           </View>
@@ -338,7 +460,10 @@ function ModelDownloadCatalog({
             key={model.id}
             model={model}
             isSelected={selectedModelId === model.id}
+            isInstalled={installedModelIds.includes(model.id)}
+            installedSize={modelDiskSizes[model.id]}
             onSelect={() => selectModel(model.id)}
+            onDelete={() => handleDelete(model)}
           />
         ))}
       </Animated.View>
@@ -354,33 +479,62 @@ function ModelDownloadCatalog({
             }}
             className="w-full py-4 rounded-[22px] bg-[#27170c] items-center justify-center flex-row gap-2 shadow-md"
           >
-            <Download size={18} color="#fbf9f4" />
-            <Text className="font-jakarta text-[15px] font-bold text-[#fbf9f4]">
-              Invite to your journal
-            </Text>
+            {isSelectedInstalled ? (
+              <>
+                <Bot size={18} color="#fbf9f4" />
+                <Text className="font-jakarta text-[15px] font-bold text-[#fbf9f4]">
+                  Chat with {selectedModel.characterName.split(' - ')[0]}
+                </Text>
+              </>
+            ) : (
+              <>
+                <Download size={18} color="#fbf9f4" />
+                <Text className="font-jakarta text-[15px] font-bold text-[#fbf9f4]">
+                  Download & Chat ({selectedModel.sizeLabel})
+                </Text>
+              </>
+            )}
           </TouchableOpacity>
 
           <Text className="font-jakarta text-[11px] text-[#a89a8b] text-center mt-2">
-            Your companion will live securely and privately on your device.
+            {isSelectedInstalled
+              ? 'Model is ready on your device. Zero cloud latency.'
+              : 'Your companion will live securely and privately on your device.'}
           </Text>
         </Animated.View>
       )}
 
       {/* Info Note */}
-      <Animated.View entering={FadeInDown.delay(400)} className="mt-6 bg-[#f7ede2] rounded-[20px] p-4 border border-[#f0e0cc]">
+      <Animated.View
+        entering={FadeInDown.delay(350)}
+        className="mt-6 bg-[#f7ede2] rounded-[20px] p-4 border border-[#f0e0cc]"
+      >
         <Text className="font-jakarta text-[12px] font-semibold text-[#b5651d] mb-1">
-          💡 Complete Privacy
+          💡 Complete Privacy & Storage Control
         </Text>
         <Text className="font-jakarta text-[12px] text-[#8a6d4a] leading-relaxed">
-          Nimo Companions are completely local. Your journal entries and conversations never leave your phone — complete privacy guaranteed.
+          Nimo Companions run locally on ExecuTorch. You can switch models or delete them anytime to reclaim storage space without losing your journals.
         </Text>
       </Animated.View>
     </ScrollView>
   );
 }
 
+// ─── System Prompt Builder ─────────────────────────────────────────
+function buildSystemPrompt(model: AvailableModel, userName: string): string {
+  return `You are ${model.name}, a mindful journaling companion for ${userName}. Reply in 1 to 2 warm, concise sentences. Never simulate the user or continue conversation on your own. Stop immediately when your response is complete.`;
+}
+
 // ─── Chat message bubble ─────────────────────────────────────────
-function MessageBubble({ role, content }: { role: 'user' | 'assistant'; content: string }) {
+function MessageBubble({
+  role,
+  content,
+  modelName = 'Nimo',
+}: {
+  role: 'user' | 'assistant';
+  content: string;
+  modelName?: string;
+}) {
   const isUser = role === 'user';
   return (
     <Animated.View
@@ -392,7 +546,7 @@ function MessageBubble({ role, content }: { role: 'user' | 'assistant'; content:
           <View className="w-5 h-5 rounded-full bg-[#566434] items-center justify-center">
             <Bot size={11} color="#ffffff" />
           </View>
-          <Text className="font-jakarta text-[10px] font-semibold text-[#a89a8b]">Nimo</Text>
+          <Text className="font-jakarta text-[10px] font-semibold text-[#a89a8b]">{modelName}</Text>
         </View>
       )}
       <View
@@ -467,19 +621,18 @@ function ChatInterface({
       const userName = profile.name ? profile.name.split(' ')[0] : 'friend';
       llm.configure({
         chatConfig: {
-          systemPrompt: `You are ${selectedModel.characterName.split(' - ')[0]}, a warm and thoughtful journaling companion. 
-The user you are speaking to is named ${userName}. 
-Here is your life story: ${selectedModel.lifeStory}
-If the user asks about you, feel free to share pieces of your life story in a conversational manner.
-Always be empathetic, concise, and encouraging. Keep responses under 3 paragraphs.`,
+          systemPrompt: buildSystemPrompt(selectedModel, userName),
         },
         generationConfig: {
-          temperature: 0.7,
-          repetitionPenalty: 1.15,
+          temperature: selectedModel.temperature,
+          repetitionPenalty: selectedModel.repetitionPenalty,
+          topP: selectedModel.topP,
+          minP: selectedModel.minP,
         },
       });
     }
   }, [llm.isReady, profile.name, selectedModel]);
+
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -487,6 +640,25 @@ Always be empathetic, concise, and encouraging. Keep responses under 3 paragraph
       setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
     }
   }, [llm.messageHistory, llm.response, llm.isGenerating, demoExtraMessages]);
+
+  // Prevent runaway generation if model hallucinates subsequent dialogue turns
+  useEffect(() => {
+    if (llm.isGenerating && llm.response) {
+      if (/\n(?:User|Human|Assistant|\[User):/i.test(llm.response)) {
+        llm.interrupt();
+      }
+    }
+  }, [llm.isGenerating, llm.response, llm]);
+
+  const handleStop = useCallback(() => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      console.log('[Nimo AI] 🛑 Generation interrupted by user');
+      llm.interrupt();
+    } catch (e) {
+      console.warn('[Nimo AI] Failed to interrupt generation:', e);
+    }
+  }, [llm]);
 
   const sendMessage = useCallback(async (forcedText?: string) => {
     const text = (forcedText || inputText).trim();
@@ -501,7 +673,7 @@ Always be empathetic, concise, and encouraging. Keep responses under 3 paragraph
         {
           role: 'assistant',
           content:
-            'Thank you for sharing that reflection with me! I have logged it into your Memory Garden. Is there anything else on your mind today?',
+            'Thank you for sharing that reflection with me! I have saved it to your reflections. Is there anything else on your mind today?',
         },
       ]);
       return;
@@ -515,28 +687,60 @@ Always be empathetic, concise, and encouraging. Keep responses under 3 paragraph
     incrementAiUsage();
 
     try {
-      // Perform semantic query against RAG vector store
-      const relevantDocs = await ragService.queryRelevantMoments(text, 4);
+      const userName = profile.name ? profile.name.split(' ')[0] : 'friend';
+      const systemPrompt = buildSystemPrompt(selectedModel, userName);
+
+      // Check if message is a simple greeting where RAG memory injection is unnecessary
+      const isGreetingOrShort =
+        text.length < 15 &&
+        /^(hi|hello|hey|good\s*(morning|afternoon|evening)|howdy|sup|what'?s\s*up|yo)\b/i.test(text);
+
+      const shouldQueryRag = !isGreetingOrShort;
 
       let finalPrompt = text;
-      if (relevantDocs.length > 0) {
-        const memoriesText = relevantDocs
-          .map((doc, idx) => {
-            const meta = doc.metadata || {};
-            const emotionStr = meta.emotion ? ` (Emotion: ${meta.emotion})` : '';
-            const titleStr = meta.title ? ` [Title: ${meta.title}]` : '';
-            return `${idx + 1}. "${doc.document}"${titleStr}${emotionStr}`;
-          })
-          .join('\n');
+      let relevantDocs: any[] = [];
+      let memoriesText = '';
 
-        finalPrompt = `[Context from user's journal memories]:\n${memoriesText}\n\nUser Question: ${text}`;
+      if (shouldQueryRag) {
+        // Query model-calibrated count of relevant moments (e.g. 2 for everyday check-ins, 4 for Liquid LFM & Llama 3B Sage)
+        const docLimit = selectedModel.ragMomentsCount || 2;
+        relevantDocs = await ragService.queryRelevantMoments(text, docLimit);
+
+        if (relevantDocs.length > 0) {
+          memoriesText = relevantDocs
+            .map((doc, idx) => {
+              const meta = doc.metadata || {};
+              const emotionStr = meta.emotion ? ` (Emotion: ${meta.emotion})` : '';
+              const titleStr = meta.title ? ` [Title: ${meta.title}]` : '';
+              const dateStr = meta.createdAt ? ` [Date: ${meta.createdAt.split('T')[0]}]` : '';
+              return `${idx + 1}. "${doc.document}"${titleStr}${dateStr}${emotionStr}`;
+            })
+            .join('\n');
+
+          finalPrompt = `Relevant past reflections:\n${memoriesText}\n\n${text}`;
+        }
       }
+
+      // Detailed payload log for developer inspection
+      console.log('══════════════════ [NIMO ON-DEVICE AI PAYLOAD] ══════════════════');
+      console.log(`🤖 Model: ${selectedModel.characterName} (ID: ${selectedModel.id})`);
+      console.log(`⚙️ Sampling: temperature=${selectedModel.temperature}, repetitionPenalty=${selectedModel.repetitionPenalty}`);
+      console.log(`📋 System Prompt (${systemPrompt.length} chars):\n${systemPrompt}`);
+      if (memoriesText) {
+        console.log(`🔍 Injected RAG Memories (${relevantDocs.length} items):\n${memoriesText}`);
+      } else {
+        console.log(`🔍 Injected RAG Memories: None (isGreetingOrShort: ${isGreetingOrShort})`);
+      }
+      console.log(`💬 User Raw Text: "${text}"`);
+      console.log(`📤 Final Prompt passed to sendMessage:\n${finalPrompt}`);
+      console.log(`📜 Message History Buffer (${llm.messageHistory.length} previous messages):\n`, JSON.stringify(llm.messageHistory, null, 2));
+      console.log('═════════════════════════════════════════════════════════════════');
 
       await llm.sendMessage(finalPrompt);
     } catch (e) {
       console.warn('LLM sendMessage error:', e);
     }
-  }, [inputText, llm, isDemo]);
+  }, [inputText, llm, isDemo, selectedModel, profile.name]);
 
   // Compute status
   const status: 'downloading' | 'loading' | 'ready' | 'error' = isDemo
@@ -642,14 +846,24 @@ Always be empathetic, concise, and encouraging. Keep responses under 3 paragraph
         {(isDemo ? [...DEMO_CHAT_MESSAGES, ...demoExtraMessages] : llm.messageHistory.filter((m) => m.role !== 'system'))
           .map((msg, idx) => {
             let displayContent = msg.content;
-            if (msg.role === 'user' && displayContent.includes('\n\nUser Question: ')) {
-              displayContent = displayContent.split('\n\nUser Question: ').pop() || displayContent;
+            if (msg.role === 'user') {
+              if (displayContent.includes('\n\nUser: ')) {
+                displayContent = displayContent.split('\n\nUser: ').pop() || displayContent;
+              } else if (displayContent.includes('\n\nUser Question: ')) {
+                displayContent = displayContent.split('\n\nUser Question: ').pop() || displayContent;
+              }
+            } else if (msg.role === 'assistant') {
+              const stopMatch = displayContent.match(/\n(?:User|Human|Assistant|\[User):/i);
+              if (stopMatch && stopMatch.index !== undefined) {
+                displayContent = displayContent.substring(0, stopMatch.index).trim();
+              }
             }
             return (
               <MessageBubble
                 key={idx}
                 role={msg.role as 'user' | 'assistant'}
                 content={displayContent}
+                modelName={selectedModel.name}
               />
             );
           })}
@@ -661,11 +875,11 @@ Always be empathetic, concise, and encouraging. Keep responses under 3 paragraph
               <View className="w-5 h-5 rounded-full bg-[#566434] items-center justify-center">
                 <Bot size={11} color="#ffffff" />
               </View>
-              <Text className="font-jakarta text-[10px] font-semibold text-[#a89a8b]">Nimo</Text>
+              <Text className="font-jakarta text-[10px] font-semibold text-[#a89a8b]">{selectedModel.name}</Text>
             </View>
             <View className="bg-white border border-[#efe9e1] rounded-[20px] rounded-bl-[6px] px-4 py-3">
               <Text className="font-jakarta text-[14px] leading-relaxed text-[#27170c]">
-                {llm.response}
+                {llm.response.split(/\n(?:User|Human|Assistant|\[User):/i)[0].trim()}
               </Text>
             </View>
           </Animated.View>
@@ -678,7 +892,7 @@ Always be empathetic, concise, and encouraging. Keep responses under 3 paragraph
               <View className="w-5 h-5 rounded-full bg-[#566434] items-center justify-center">
                 <Bot size={11} color="#ffffff" />
               </View>
-              <Text className="font-jakarta text-[10px] font-semibold text-[#a89a8b]">Nimo</Text>
+              <Text className="font-jakarta text-[10px] font-semibold text-[#a89a8b]">{selectedModel.name}</Text>
             </View>
             <View className="bg-white border border-[#efe9e1] rounded-[20px] rounded-bl-[6px] px-2 py-1">
               <TypingIndicator />
@@ -721,15 +935,26 @@ Always be empathetic, concise, and encouraging. Keep responses under 3 paragraph
               onSubmitEditing={() => sendMessage()}
               blurOnSubmit={false}
             />
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => sendMessage()}
-              disabled={!inputText.trim() || (!isDemo && (!llm.isReady || llm.isGenerating))}
-              className={`w-9 h-9 rounded-full items-center justify-center ${inputText.trim() && (isDemo || (llm.isReady && !llm.isGenerating)) ? 'bg-[#566434]' : 'bg-[#e4e2dd]'
-                }`}
-            >
-              <Send size={16} color={inputText.trim() && (isDemo || (llm.isReady && !llm.isGenerating)) ? '#ffffff' : '#a89a8b'} />
-            </TouchableOpacity>
+            {llm.isGenerating && !isDemo ? (
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={handleStop}
+                className="w-9 h-9 rounded-full items-center justify-center bg-[#b5651d]"
+                accessibilityLabel="Stop generation"
+              >
+                <CircleStop size={18} color="#ffffff" />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => sendMessage()}
+                disabled={!inputText.trim() || (!isDemo && !llm.isReady)}
+                className={`w-9 h-9 rounded-full items-center justify-center ${inputText.trim() && (isDemo || llm.isReady) ? 'bg-[#566434]' : 'bg-[#e4e2dd]'
+                  }`}
+              >
+                <Send size={16} color={inputText.trim() && (isDemo || llm.isReady) ? '#ffffff' : '#a89a8b'} />
+              </TouchableOpacity>
+            )}
           </View>
         )}
       </View>
@@ -759,42 +984,68 @@ function ChatHeader({
   const { label, color } = statusConfig[status];
 
   return (
-    <View className="px-5 pt-4 pb-3 border-b border-[#efe9e1] flex-row items-center">
+    <View className="px-5 pt-4 pb-3 border-b border-[#efe9e1] flex-row items-center justify-between">
+      <View className="flex-row items-center flex-1 mr-2">
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onBack();
+          }}
+          className="w-9 h-9 rounded-full bg-[#f0eee9] items-center justify-center border border-[#e4e2dd] mr-3"
+        >
+          <ArrowLeft size={16} color="#4f453f" />
+        </TouchableOpacity>
+        <View className="flex-row items-center gap-3 flex-1">
+          <View className="w-10 h-10 rounded-full bg-[#566434] items-center justify-center">
+            <Bot size={20} color="#ffffff" />
+          </View>
+          <View className="flex-1">
+            <Text className="font-playfair text-[18px] font-bold text-[#27170c]" numberOfLines={1}>
+              {modelName}
+            </Text>
+            <View className="flex-row items-center gap-1">
+              <View className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
+              <Text className="font-jakarta text-[11px]" style={{ color }} numberOfLines={1}>
+                {label}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </View>
+
       <TouchableOpacity
         activeOpacity={0.7}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           onBack();
         }}
-        className="w-9 h-9 rounded-full bg-[#f0eee9] items-center justify-center border border-[#e4e2dd] mr-3"
+        className="flex-row items-center gap-1.5 bg-[#f0eee9] px-3 py-1.5 rounded-full border border-[#e4e2dd]"
       >
-        <ArrowLeft size={16} color="#4f453f" />
+        <Settings size={13} color="#566434" />
+        <Text className="font-jakarta text-[11px] font-bold text-[#566434]">
+          Models
+        </Text>
       </TouchableOpacity>
-      <View className="flex-row items-center gap-3 flex-1">
-        <View className="w-10 h-10 rounded-full bg-[#566434] items-center justify-center">
-          <Bot size={20} color="#ffffff" />
-        </View>
-        <View>
-          <Text className="font-playfair text-[20px] font-bold text-[#27170c]">{modelName}</Text>
-          <View className="flex-row items-center gap-1">
-            <View className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
-            <Text className="font-jakarta text-[11px]" style={{ color }}>
-              {modelName} · {label}
-            </Text>
-          </View>
-        </View>
-      </View>
     </View>
   );
 }
 
 // ─── Main Export ──────────────────────────────────────────────────
 export function NimoAIChat() {
-  const { selectedModelId, selectedModel, isModelActivated, activateModel, clearModel } = useModelStore();
+  const {
+    selectedModelId,
+    selectedModel,
+    isModelActivated,
+    activateModel,
+    deactivateModel,
+    refreshInstalledModels,
+  } = useModelStore();
   const [isDemo, setIsDemo] = useState(isDemoChatActive());
 
   useFocusEffect(
     useCallback(() => {
+      refreshInstalledModels();
       getDemoSeedStatus().then((status) => {
         if (status.isSeeded) {
           setDemoChatActive(true);
@@ -803,7 +1054,7 @@ export function NimoAIChat() {
           setIsDemo(isDemoChatActive());
         }
       });
-    }, [])
+    }, [refreshInstalledModels])
   );
 
   if (isDemo) {
@@ -840,7 +1091,7 @@ export function NimoAIChat() {
     <ChatInterface
       selectedModel={selectedModel}
       onBack={() => {
-        clearModel();
+        deactivateModel();
       }}
     />
   );

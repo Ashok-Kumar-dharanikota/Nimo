@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useLocalSearchParams } from 'expo-router';
+import { useState, useCallback } from 'react';
+import { useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { momentService } from '../services/momentService';
 import type { MomentDetailData } from '../utils/momentConstants';
 
@@ -11,31 +11,32 @@ export function useMomentDetail(passedId?: string | number) {
   const [taskCompleted, setTaskCompleted] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadData() {
-      if (!idStr) {
-        setIsLoading(false);
-        return;
-      }
-
-      const momentId = parseInt(idStr, 10);
-      if (isNaN(momentId)) {
-        setIsLoading(false);
-        return;
-      }
-
-      setIsLoading(true);
-      const data = await momentService.getMomentById(momentId);
-      if (data) {
-        setMomentData(data);
-        const taskStatus = await momentService.getTaskStatusForDate(data.createdAt);
-        setTaskCompleted(taskStatus);
-      }
+  const loadData = useCallback(async () => {
+    if (!idStr) {
       setIsLoading(false);
+      return;
     }
 
-    loadData();
+    const momentId = parseInt(idStr, 10);
+    if (isNaN(momentId)) {
+      setIsLoading(false);
+      return;
+    }
+
+    const data = await momentService.getMomentById(momentId);
+    if (data) {
+      setMomentData(data);
+      const taskStatus = await momentService.getTaskStatusForDate(data.createdAt);
+      setTaskCompleted(taskStatus);
+    }
+    setIsLoading(false);
   }, [idStr]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
 
   return {
     momentData,

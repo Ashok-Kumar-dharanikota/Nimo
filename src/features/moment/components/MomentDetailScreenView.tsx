@@ -6,21 +6,25 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { ArrowLeft, CheckCircle, Circle, Sparkle } from 'lucide-react-native';
+import { ArrowLeft, CheckCircle, Circle, Sparkle, Edit3, Trash2 } from 'lucide-react-native';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MomentVideoPlayer } from '@/features/home/components/MomentVideoPlayer';
 import { formatTime, parseSQLiteDate } from '@/features/home/utils/dateUtils';
+import { draftStore } from '@/store/draftStore';
+import { useHomeData } from '@/features/home/hooks/useHomeData';
 import { useMomentDetail } from '../hooks/useMomentDetail';
 import { MOMENT_EMOTION_MAP } from '../utils/momentConstants';
 
 export function MomentDetailScreenView({ momentId }: { momentId?: string | number }) {
   const router = useRouter();
   const { momentData, taskCompleted, isLoading } = useMomentDetail(momentId);
+  const { deleteMoment } = useHomeData();
 
   if (isLoading || !momentData) {
     return (
@@ -48,6 +52,44 @@ export function MomentDetailScreenView({ momentId }: { momentId?: string | numbe
       </SafeAreaView>
     );
   }
+
+  const handleEdit = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    draftStore.editDraftMoment({
+      id: momentData.id,
+      title: momentData.title,
+      content: momentData.content,
+      emotion: momentData.emotion,
+      mediaUri: momentData.mediaUri,
+      mediaType: momentData.mediaType,
+      createdAt: momentData.createdAt,
+    });
+    router.push('/compose');
+  };
+
+  const handleDelete = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    Alert.alert(
+      'Delete Reflection',
+      'Are you sure you want to delete this reflection? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteMoment(momentData.id);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              router.back();
+            } catch (err) {
+              console.error('Failed to delete moment:', err);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const emotionConfig = (momentData.emotion && MOMENT_EMOTION_MAP[momentData.emotion]) || {
     Icon: Sparkle,
@@ -80,6 +122,25 @@ export function MomentDetailScreenView({ momentId }: { momentId?: string | numbe
         >
           <ArrowLeft size={20} color="#4f453f" />
         </TouchableOpacity>
+
+        {/* Edit & Delete Action Buttons */}
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={handleEdit}
+            style={styles.actionButton}
+          >
+            <Edit3 size={17} color="#566434" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={handleDelete}
+            style={[styles.actionButton, styles.deleteButton]}
+          >
+            <Trash2 size={17} color="#c2410c" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
@@ -139,9 +200,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#fbf9f4',
   },
   header: {
-    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
     paddingTop: 8,
-    paddingBottom: 8,
+    paddingBottom: 12,
   },
   backButton: {
     width: 40,
@@ -150,6 +214,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0eee9',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  actionButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#eef1e4',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteButton: {
+    backgroundColor: '#ffedd5',
   },
   contentContainer: {
     paddingHorizontal: 20,

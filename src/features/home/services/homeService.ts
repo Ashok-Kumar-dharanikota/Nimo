@@ -89,11 +89,11 @@ export const getTodaysFlow = async (targetDate: Date = new Date()): Promise<Mome
       mappedResult.push(
         {
           id: -1,
-          content: 'Every thought, photo, or reflection you save here grows a leaf in your Memory Garden. Take a breath and reflect anytime.',
+          content: 'Every thought, photo, or reflection you record here becomes part of your private mindful story. Take a breath and reflect anytime.',
           createdAt: new Date().toISOString(),
           journalTitle: 'Quick Thoughts',
           emotion: 'inspired',
-          title: '🌱 Welcome to Nimo! Your personal memory garden',
+          title: '🌿 Welcome to Nimo! Your personal mindful journal',
           mediaUri: null,
           mediaType: null,
           isDraft: false,
@@ -111,7 +111,7 @@ export const getTodaysFlow = async (targetDate: Date = new Date()): Promise<Mome
         },
         {
           id: -3,
-          content: 'Tap the floating "+" button at the bottom anytime to add a moment directly to your timeline. You can save as draft or plant it right away!',
+          content: 'Tap the floating "+" button at the bottom anytime to record an entry directly to your timeline. You can save as draft or save it right away!',
           createdAt: new Date().toISOString(),
           journalTitle: 'Quick Thoughts',
           emotion: 'happy',

@@ -67,6 +67,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       'expo-video',
       'expo-notifications',
       'expo-updates',
+      'expo-asset',
+      'expo-image',
+      'expo-web-browser',
       'react-native-nitro-google-signin',
     ],
     experiments: {

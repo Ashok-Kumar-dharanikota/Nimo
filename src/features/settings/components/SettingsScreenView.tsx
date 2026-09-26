@@ -26,10 +26,12 @@ import {
   Lightbulb,
   LogOut,
   LogIn,
+  Bot,
 } from 'lucide-react-native';
 import { CustomModal } from '@/components/ui/CustomModal';
 import Constants from 'expo-constants';
 
+import { useModelStore } from '@/features/ai/hooks/useModelStore';
 import { useSettings } from '../hooks/useSettings';
 import { SettingsSection } from './SettingsSection';
 import { SettingsRow, SettingsDivider } from './SettingsRow';
@@ -37,6 +39,7 @@ import { THEME_LABELS, FEATURE_REQUEST_MAILTO } from '../utils/settingsConstants
 
 export function SettingsScreenView() {
   const router = useRouter();
+  const { totalAiStorageUsed, deactivateModel } = useModelStore();
   const {
     profile,
     updateProfile,
@@ -143,6 +146,19 @@ export function SettingsScreenView() {
               />
             </>
           )}
+        </SettingsSection>
+
+        {/* AI Companions & Storage */}
+        <SettingsSection title="AI Companions & Storage" delay={150}>
+          <SettingsRow
+            icon={Bot}
+            label="Manage AI Models"
+            value={totalAiStorageUsed}
+            onPress={() => {
+              deactivateModel();
+              router.push('/(app)/ai');
+            }}
+          />
         </SettingsSection>
 
         {/* About */}

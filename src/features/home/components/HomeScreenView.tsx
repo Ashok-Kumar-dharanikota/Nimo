@@ -2,19 +2,17 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { StorybookTimeline } from '@/features/home/components/StorybookTimeline';
 import { TopAppBar } from '@/features/home/components/TopAppBar';
 import { WeeklyStreaks } from '@/features/home/components/WeeklyStreaks';
+import { DailyReflectionPromptCard } from '@/features/home/components/DailyReflectionPromptCard';
 import { useHomeData } from '@/features/home/hooks/useHomeData';
 import { useTaskData } from '@/features/home/hooks/useTaskData';
 import { draftStore, useDraftStore } from '@/store/draftStore';
 import * as Haptics from 'expo-haptics';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { ArrowRight } from 'lucide-react-native';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Image,
   RefreshControl,
   ScrollView,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import Animated, { FadeInUp, FadeOutDown } from 'react-native-reanimated';
@@ -27,7 +25,6 @@ export function HomeScreenView() {
   const {
     weeklyStreaks,
     todaysFlow,
-    gardenSummary,
     isLoading,
     addQuickMoment,
     isAddingMoment,
@@ -72,7 +69,7 @@ export function HomeScreenView() {
   ) => {
     try {
       await addQuickMoment({ content, emotion, title, mediaUri, mediaType });
-      setToastMessage('A new moment has been planted');
+      setToastMessage('A new reflection has been saved');
       setTimeout(() => setToastMessage(null), 2500);
     } catch (err) {
       console.error('Failed to save moment:', err);
@@ -85,43 +82,9 @@ export function HomeScreenView() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const handleEnterGarden = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.push('/garden');
-  };
-
   const handleRecordTap = () => {
     draftStore.startDraft();
   };
-
-  // Compute total moments / leaves grown from instant SQLite summary
-  const leavesCount = gardenSummary.leavesCount;
-
-  let gardenTitle = 'Your Garden is Thriving';
-  let gardenSubtitle = '';
-  if (leavesCount === 0) {
-    gardenTitle = 'Start Your Garden';
-    gardenSubtitle = 'Plant your first reflection to grow a leaf of memory.';
-  } else {
-    const lastRecordDate = gardenSummary.lastRecordDate ? new Date(gardenSummary.lastRecordDate) : null;
-
-    if (lastRecordDate) {
-      const diffTime = Math.abs(new Date().getTime() - lastRecordDate.getTime());
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-      if (diffDays >= 2 && diffDays <= 7) {
-        gardenTitle = 'Your Garden Misses You';
-        gardenSubtitle = `It's been ${diffDays} days since you last planted a memory. Come back and grow your garden!`;
-      } else if (diffDays > 7) {
-        gardenTitle = 'Your Garden is Waiting';
-        gardenSubtitle = `Your garden has been quiet. Plant a new memory to bring it back to life!`;
-      } else {
-        gardenSubtitle = `You have nurtured ${leavesCount} leaf${leavesCount === 1 ? '' : 'ves'}. Walk among your memories.`;
-      }
-    } else {
-      gardenSubtitle = `You have nurtured ${leavesCount} leaf${leavesCount === 1 ? '' : 'ves'}. Walk among your memories.`;
-    }
-  }
 
   // ─── Default: Timeline Dashboard ──────────────────
   return (
@@ -144,48 +107,14 @@ export function HomeScreenView() {
 
         {isLoading ? (
           <View className="px-5 mt-4">
-            <Skeleton className="w-full h-[200px] rounded-[24px] mb-4 bg-[#f0eee9]" />
+            <Skeleton className="w-full h-[180px] rounded-[24px] mb-4 bg-[#f0eee9]" />
             <Skeleton className="w-full h-[150px] rounded-[20px] mb-4 bg-[#f0eee9]" />
             <Skeleton className="w-full h-[150px] rounded-[20px] bg-[#f0eee9]" />
           </View>
         ) : (
           <>
-            {/* 3. Memory Garden Feature Banner */}
-            <View className="px-5 mb-4">
-              <TouchableOpacity
-                activeOpacity={0.9}
-                onPress={handleEnterGarden}
-                className="bg-[#566434] rounded-[28px] p-5 shadow-md border border-white/10 overflow-hidden relative"
-              >
-                <View className="absolute -right-12 -top-12 w-36 h-36 bg-white/5 rounded-full" />
-                <View className="flex-row items-center justify-between z-10">
-                  <View className="flex-1 pr-24">
-                    <Text className="font-jakarta text-[11px] font-bold text-white/60 tracking-wider uppercase mb-1">
-                      Memory Garden
-                    </Text>
-                    <Text className="font-playfair text-xl font-bold text-white leading-tight mb-1.5">
-                      {gardenTitle}
-                    </Text>
-                    <Text className="font-jakarta text-[12.5px] text-white/80 leading-snug mb-3">
-                      {gardenSubtitle}
-                    </Text>
-                    <View className="flex-row items-center gap-2 bg-white/15 self-start px-3.5 py-1.5 rounded-full border border-white/10">
-                      <Text className="font-jakarta text-[11.5px] font-bold text-white">
-                        Explore Garden
-                      </Text>
-                      <ArrowRight size={13} color="white" />
-                    </View>
-                  </View>
-                </View>
-                <View className="absolute -right-14 -bottom-8 w-60 h-60 opacity-80 z-0 pointer-events-none">
-                  <Image
-                    source={require('../../../../assets/images/nimo/sprout.png')}
-                    className="w-full h-full"
-                    resizeMode="contain"
-                  />
-                </View>
-              </TouchableOpacity>
-            </View>
+            {/* 3. Daily Reflection Inspiration Hero */}
+            <DailyReflectionPromptCard onStartReflection={handleRecordTap} />
 
             {/* 4. Storybook Timeline Feed */}
             <StorybookTimeline

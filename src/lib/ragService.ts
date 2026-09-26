@@ -134,6 +134,9 @@ class RAGService {
 
   /**
    * Performs semantic query against indexed moments.
+   * NOTE: This retrieves ONLY the top-K most semantically relevant moments (default 2 to 4)
+   * calculated via cosine distance of dense vector embeddings. It does NOT retrieve or dump
+   * all user moments, preserving on-device LLM context windows and avoiding mobile RAM spikes.
    */
   async queryRelevantMoments(
     queryText: string,

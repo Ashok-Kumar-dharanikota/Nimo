@@ -8,7 +8,6 @@ import {
   getMomentsForCurrentYear,
   getGardenSummary,
   deleteMoment,
-  type GardenSummary,
 } from '../services/homeService';
 
 export const useGardenData = () => {

@@ -17,6 +17,9 @@ import { useAuth } from '../hooks/useAuth';
 import { GoogleSignInButton } from './GoogleSignInButton';
 import { GuestNameInput } from './GuestNameInput';
 
+// Temporary toggle to control Google Sign-In visibility in the Auth Layer
+const SHOW_GOOGLE_SIGN_IN = false;
+
 export function AuthScreenView() {
   const {
     loading,
@@ -71,18 +74,22 @@ export function AuthScreenView() {
                 </View>
               )}
 
-              {/* 1. Google Sign-In */}
-              <GoogleSignInButton
-                onPress={signInWithGoogle}
-                loading={loading}
-              />
+              {/* 1. Google Sign-In (Temporarily hidden) */}
+              {SHOW_GOOGLE_SIGN_IN && (
+                <>
+                  <GoogleSignInButton
+                    onPress={signInWithGoogle}
+                    loading={loading}
+                  />
 
-              {/* Subtle Divider */}
-              <View style={styles.dividerRow}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>or join as guest</Text>
-                <View style={styles.dividerLine} />
-              </View>
+                  {/* Subtle Divider */}
+                  <View style={styles.dividerRow}>
+                    <View style={styles.dividerLine} />
+                    <Text style={styles.dividerText}>or join as guest</Text>
+                    <View style={styles.dividerLine} />
+                  </View>
+                </>
+              )}
 
               {/* 2. Inline Guest Name Input with Circular Confirm Button */}
               <GuestNameInput

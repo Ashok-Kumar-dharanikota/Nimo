@@ -31,7 +31,7 @@ export const DEMO_CHAT_MESSAGES: Array<{ role: 'user' | 'assistant'; content: st
   {
     role: 'assistant',
     content:
-      'Start small — even a 5-minute breather on your balcony with a warm drink preserves your grounding ritual. Your 15-day memory garden is proof of how well these small pauses nourish your mind.',
+      'Start small — even a 5-minute breather on your balcony with a warm drink preserves your grounding ritual. Your 15-day reflection streak is proof of how well these small pauses nourish your mind.',
   },
 ];
 
@@ -78,7 +78,7 @@ export async function clearDemoMomentsForScreenshots(): Promise<void> {
 /**
  * Seeds rich demo moments across the last 14 consecutive days up to today (15 days total).
  * Activates a 15-day streak and fills the timeline with moments (including rich photography),
- * memory garden, weekly streaks, and profile statistics.
+ * daily journals, weekly streaks, and profile statistics.
  */
 export async function seedDemoMomentsForScreenshots(): Promise<number> {
   try {
